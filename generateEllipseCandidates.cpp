@@ -6,14 +6,17 @@
 #include <limits.h>
 #include <float.h>
 #include <iostream>
-#include "lapack.h"  //matlab 
+//#include "lapack.h"  //matlab 
 //#include "include/lapacke_config.h"  //lapack手动，未成功
 //#include "include/lapacke.h"
-#include "opencv2/core/core.hpp" 
-#include "opencv2/features2d/features2d.hpp"
-#include "opencv2/nonfree/features2d.hpp"
-#include "opencv2/highgui/highgui.hpp"
-#include <opencv2\opencv.hpp>
+#include "/usr/local/Cellar/opencv@2/2.4.13.7_12/include/opencv2/core/core.hpp"
+#include "/usr/local/Cellar/opencv@2/2.4.13.7_12/include/opencv2/features2d/features2d.hpp"
+#include "/usr/local/Cellar/opencv@2/2.4.13.7_12/include/opencv2/nonfree/features2d.hpp"
+#include "/usr/local/Cellar/opencv@2/2.4.13.7_12/include/opencv2/highgui/highgui.hpp"
+#include </usr/local/Cellar/opencv@2/2.4.13.7_12/include/opencv2/opencv.hpp>
+#include "lapack.h"
+///#include "/Applications/MATLAB_R2018a.app/extern/include/mex.hpp"
+//#include "/Applications/MATLAB_R2018a.app/extern/include/mexAdapter.hpp"
 using namespace cv;
 
 
@@ -3199,8 +3202,8 @@ void freePairGroupList( PairGroupList * list)
 	if(list == NULL || list->pairGroup == NULL)
 		error("freePairGroupList,invalidate free");
 	free(list->pairGroup);
+    list->pairGroup = NULL;
 	free(list);
-	list->pairGroup = NULL;
 	list = NULL;
 }
 
