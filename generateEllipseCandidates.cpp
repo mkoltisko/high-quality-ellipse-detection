@@ -7,7 +7,7 @@
 #include <float.h>
 #include <iostream>
 //#include "lapack.h"  //matlab 
-//#include "include/lapacke_config.h"  //lapack手动，未成功
+//#include "include/lapacke_config.h"  //lapack手动，未成功 (//lapack manual, unsuccessful)
 //#include "include/lapacke.h"
 #include "/usr/local/Cellar/opencv@2/2.4.13.7_12/include/opencv2/core/core.hpp"
 #include "/usr/local/Cellar/opencv@2/2.4.13.7_12/include/opencv2/features2d/features2d.hpp"
@@ -176,6 +176,7 @@ int double_equal(double a, double b)
 /** Absolute value angle difference.
  */
 //得到2个弧度制角度的夹角的绝对值
+//Get the absolute value of the angle between 2 radians
 double angle_diff(double a, double b)
 {
   a -= b;
@@ -213,6 +214,7 @@ double dist(double x1, double y1, double x2, double y2)
 }
 
 //向量内积
+//vector inner product
 double dotProduct(point2d vec1, point2d vec2)
 {
 	return (vec1.x*vec2.x+vec1.y*vec2.y);
@@ -530,6 +532,7 @@ image_double new_image_double_ptr( int xsize,
 #define USED    1
 
 //对于构成圆弧的像素标记极性，如果梯度的方向和弧的方向指向一致，则为SAME_POLE,否则为OPP_POLE,该标记初始是为0
+//For the polarity of the pixel marker that forms the arc, if the direction of the gradient is the same as the direction of the arc, it is SAME_POLE, otherwise it is OPP_POLE, and the marker is initially 0
 #define NOTDEF_POL 0
 #define SAME_POL 1
 #define OPP_POL  -1
@@ -872,7 +875,7 @@ static image_double gaussian_sampler( image_double in, double scale,
   if( in->xsize * scale > (double) UINT_MAX ||
       in->ysize * scale > (double) UINT_MAX )
     error("gaussian_sampler: the output image size exceeds the handled size.");
-  N = (unsigned int) ceil( in->xsize * scale );//上取整
+  N = (unsigned int) ceil( in->xsize * scale );//上取整 (round up)
   M = (unsigned int) ceil( in->ysize * scale );
   aux = new_image_double(N,in->ysize);
   out = new_image_double(N,M);
@@ -887,7 +890,7 @@ static image_double gaussian_sampler( image_double in, double scale,
      Then,
        x = sigma * sqrt( 2 * prec * ln(10) ).
    */
-  prec = 3.0;//高斯核的最外围降到10^(-3)
+  prec = 3.0;//高斯核的最外围降到10^(-3) (The outermost periphery of the Gaussian kernel drops to 10^(-3))
   h = (unsigned int) ceil( sigma * sqrt( 2.0 * prec * log(10.0) ) );
   n = 1+2*h; /* kernel size */
   kernel = new_ntuple_list(n);
@@ -995,6 +998,10 @@ static image_double gaussian_sampler( image_double in, double scale,
  */
 //返回一张梯度角度顺时针旋转90°后的align角度图angles，如果梯度角度是(gx,gy)->(-gy,gx)，
 //和梯度的模的图modgrad,然后按照n_bins进行伪排序返回链表的头指针list_p,里面存的是坐标
+//Returns an align angle map angles after the gradient angle is rotated 90° clockwise, 
+//if the gradient angle is (gx,gy)->(-gy,gx), and the map modgrad of the gradient's modulus, 
+//and then returns according to the pseudo-sort of n_bins The head pointer list_p of the linked list, 
+//which stores the coordinates
 static image_double ll_angle( image_double in, double threshold,
                               struct coorlist ** list_p,
                               image_double * modgrad, unsigned int n_bins )
@@ -1102,13 +1109,13 @@ static image_double ll_angle( image_double in, double threshold,
         i = (unsigned int) (norm * (double) n_bins / max_grad);
         if( i >= n_bins ) i = n_bins-1;
         if( range_l_e[i] == NULL )
-          range_l_s[i] = range_l_e[i] = temp;//记录第i个区域的头指针到range_l_s[i]
+          range_l_s[i] = range_l_e[i] = temp;//记录第i个区域的头指针到range_l_s[i] (Record the head pointer of the i-th area to range_l_s[i])
         else
           {
-            range_l_e[i]->next = temp;//第i个区域由尾指针range_l_e[i]完成勾链
+            range_l_e[i]->next = temp;//第i个区域由尾指针range_l_e[i]完成勾链 (The i-th area is linked by the tail pointer range_l_e[i])
             range_l_e[i] = temp;
           }
-        range_l_e[i]->x = (int) x;//将坐标(x,y)记录到第i个分区
+        range_l_e[i]->x = (int) x;//将坐标(x,y)记录到第i个分区 (Record the coordinates (x,y) to the ith partition)
         range_l_e[i]->y = (int) y;
         range_l_e[i]->next = NULL;
       }
@@ -1118,7 +1125,7 @@ static image_double ll_angle( image_double in, double threshold,
      pixels with the highest gradient value. Pixels would be ordered
      by norm value, up to a precision given by max_grad/n_bins.
    */
-  for(i=n_bins-1; i>0 && range_l_s[i]==NULL; i--);//找到第一个不为空的分区bin
+  for(i=n_bins-1; i>0 && range_l_s[i]==NULL; i--);//找到第一个不为空的分区bin (Find the first partition bin that is not empty)
   start = range_l_s[i];
   end = range_l_e[i];
   if( start != NULL )
@@ -1508,7 +1515,7 @@ static double get_theta( point2i * reg, int reg_size, double x, double y,
       Iyy += ( (double) reg[i].x - x ) * ( (double) reg[i].x - x ) * weight;
       Ixy -= ( (double) reg[i].x - x ) * ( (double) reg[i].y - y ) * weight;
     }
-  if( double_equal(Ixx,0.0) && double_equal(Iyy,0.0) && double_equal(Ixy,0.0) )//判断Ixx、Iyy、Ixy与0是否非常接近，由于它们为double类型，故需要专门的函数判断
+  if( double_equal(Ixx,0.0) && double_equal(Iyy,0.0) && double_equal(Ixy,0.0) )//判断Ixx、Iyy、Ixy与0是否非常接近，由于它们为double类型，故需要专门的函数判断 (To judge whether Ixx, Iyy, Ixy are very close to 0, because they are of double type, special function judgment is required)
     error("get_theta: null inertia matrix.");
 
   /* compute smallest eigenvalue */
@@ -1519,13 +1526,13 @@ static double get_theta( point2i * reg, int reg_size, double x, double y,
   /* The previous procedure doesn't cares about orientation,
      so it could be wrong by 180 degrees. Here is corrected if necessary. */
   temp1 = angle_diff(theta,reg_angle);
-  if( temp1 > prec )//这是由于用惯性矩阵算出的两个正交轴的较小特征值对应的角度和该区域的角度可能相差180°
+  if( temp1 > prec )//这是由于用惯性矩阵算出的两个正交轴的较小特征值对应的角度和该区域的角度可能相差180° (This is because the angle corresponding to the smaller eigenvalues ??of the two orthogonal axes calculated by the inertia matrix may differ by 180° from the angle of the region)
   {
 	  //------------------------------------------
 	  //theta += M_PI;   //origin code
 	  //------------------------------------------
 	  //------------------------------------------
-	  //my code,增加该段代码，限制theta在 (-pi,pi)之间
+	  //my code,增加该段代码，限制theta在 (-pi,pi)之间 (my code, add this code, limit theta between (-pi,pi))
 	  //int flag = 0;
 	  temp2 = angle_diff(theta+M_PI,reg_angle);
 	  if(temp2 < prec)
@@ -1581,7 +1588,7 @@ static void region2rect( point2i * reg, int reg_size,
      where G(i) is the norm of the gradient of pixel i
      and x_i,y_i are its coordinates.
    */
-  //获得质心 x,y
+  //获得质心 x,y (get centroid x,y)
   x = y = sum = 0.0;
   for(i=0; i<reg_size; i++)
     {
@@ -1595,7 +1602,7 @@ static void region2rect( point2i * reg, int reg_size,
   y /= sum;
 
   /* theta */
-  //运用惯性矩阵获得更为精确的角度估计
+  //运用惯性矩阵获得更为精确的角度估计 (Use Inertia Matrix for More Accurate Angle Estimation)
   theta = get_theta(reg,reg_size,x,y,modgrad,reg_angle,prec);
   dx = cos(theta);
   dy = sin(theta);
@@ -1612,7 +1619,7 @@ static void region2rect( point2i * reg, int reg_size,
      w_min and w_max are the minimum and maximum of w for the pixels
      in the region.
    */
-  //因为区域的方向向量为 (dx,dy) 
+  //因为区域的方向向量为 (dx,dy) (Because the direction vector of the region is (dx,dy))
   /*
   ------------------->x
   |\
@@ -1624,7 +1631,7 @@ static void region2rect( point2i * reg, int reg_size,
   因此顺时针旋转90°是 (-dy,dx)
   */
   l_min = l_max = w_min = w_max = 0.0;
-  for(i=0; i<reg_size; i++)//用向量内积求在线段方向和与线段方向垂直方向的投影求l,w
+  for(i=0; i<reg_size; i++)//用向量内积求在线段方向和与线段方向垂直方向的投影求l,w (Use the inner product of vectors to find the projection of the line segment direction and the direction perpendicular to the line segment direction to find l, w)
     {
       l =  ( (double) reg[i].x - x) * dx + ( (double) reg[i].y - y) * dy;
       w = -( (double) reg[i].x - x) * dy + ( (double) reg[i].y - y) * dx;
@@ -1660,7 +1667,7 @@ static void region2rect( point2i * reg, int reg_size,
 	  rec->width = 1.0;
 }
 
-//区域质心和角度已经计算好了，因此只进行矩形近似。而region2rect此外还进行了质心和角度计算。
+//区域质心和角度已经计算好了，因此只进行矩形近似。而region2rect此外还进行了质心和角度计算。(Region centroids and angles are already calculated, so only rectangular approximations are made. And region2rect also performs centroid and angle calculations.)
 static void region2rect2(point2i * reg, int reg_size,double reg_center_x,double reg_center_y,
 					double reg_theta,double prec, double p, struct rect * rec )
 {
@@ -1671,11 +1678,11 @@ static void region2rect2(point2i * reg, int reg_size,double reg_center_x,double 
   if( reg_size <= 1 ) error("region2rect: region size <= 1.");
   if( rec == NULL ) error("region2rect: invalid 'rec'.");
 
-  //获得区域的方向向量(dx,dy)
+  //获得区域的方向向量(dx,dy) (Get the direction vector of the region (dx,dy))
   dx = cos(reg_theta);
   dy = sin(reg_theta);
   l_min = l_max = w_min = w_max = 0.0;
-  for(i=0; i<reg_size; i++)//用向量内积求在线段方向和与线段方向垂直方向的投影求l,w
+  for(i=0; i<reg_size; i++)//用向量内积求在线段方向和与线段方向垂直方向的投影求l,w (Use the inner product of vectors to find the projection of the line segment direction and the direction perpendicular to the line segment direction to find l, w)
     {
       l =  ( (double) reg[i].x - reg_center_x) * dx + ( (double) reg[i].y - reg_center_y) * dy;
       w = -( (double) reg[i].x - reg_center_x) * dy + ( (double) reg[i].y - reg_center_y) * dx;
@@ -1899,7 +1906,7 @@ static int reduce_region_radius( struct point2i * reg, int * reg_size,
   if( angles == NULL || angles->data == NULL )
     error("reduce_region_radius: invalid image 'angles'.");
 
-  /* compute region point2is density */ //该密度判断已经在函数外判断过，应该可以不用在判断了吧
+  /* compute region point2is density */ //该密度判断已经在函数外判断过，应该可以不用在判断了吧 (The density judgment has already been judged outside the function, so it should not be necessary to judge it.)
   density = (double) *reg_size /
                          ( dist(rec->x1,rec->y1,rec->x2,rec->y2) * rec->width );
 
@@ -1997,15 +2004,15 @@ static int refine( struct point2i * reg, int * reg_size, image_double modgrad,
         {
           angle = angles->data[ reg[i].x + reg[i].y * angles->xsize ];
           ang_d = angle_diff_signed(angle,ang_c);
-          sum += ang_d;//加上角度差
-          s_sum += ang_d * ang_d;//加上角度差的平方
+          sum += ang_d;//加上角度差 (plus angle difference)
+          s_sum += ang_d * ang_d;//加上角度差的平方 (plus the square of the angle difference)
           ++n;
         }
     }
   mean_angle = sum / (double) n;
-  //以2倍标准差作为新的角度容忍度，最开始为22.5°*pi/180
+  //以2倍标准差作为新的角度容忍度，最开始为22.5°*pi/180 (Take 2 standard deviations as the new angle tolerance, initially 22.5°*pi/180)
   tau = 2.0 * sqrt( (s_sum - 2.0 * mean_angle * sum) / (double) n  +  mean_angle*mean_angle ); /* 2 * standard deviation */
-  //以新的角度容忍度重新进行区域生长
+  //以新的角度容忍度重新进行区域生长 (Re-do area growing with new angle tolerance)
   /* find a new region from the same starting point2i and new angle tolerance */
   region_grow(reg[0].x,reg[0].y,angles,reg,reg_size,&reg_angle,used,tau);
 
@@ -2050,17 +2057,20 @@ bool isArcSegment(point2i * reg, int reg_size, struct rect * main_rect, image_do
 	{
 		switch(pol->data[reg[i].y*pol->xsize+reg[i].x])
 		{
-			case SAME_POL: same_pol_cnt++;break;//统计同极性的pixel数量
-			case OPP_POL : opp_pol_cnt++; break;//统计反极性的pixel数量
+			case SAME_POL: same_pol_cnt++;break;//统计同极性的pixel数量 (Count the number of pixels with the same polarity)
+			case OPP_POL : opp_pol_cnt++; break;//统计反极性的pixel数量 (Count the number of pixels with reversed polarity)
 			default:break;
 		}
 	 //选与theta角度为法线方向，过质心的直线方程为 dx*(x-xi)+dy*(y-yi)=0,则与方向相同的点代入方程得到距离d,d>=0归入reg_up,d<0归入reg_down
+	 //(Select the angle with theta as the normal direction, and the equation of the line passing through the center of mass 
+	 //is dx*(x-xi)+dy*(y-yi)=0, then the point with the same direction is substituted into the equation to get the distance d, 
+	 //d>=0 normalization into reg_up, d<0 into reg_down)
 	  if( main_rect->dx*( reg[i].x - main_rect->x ) + main_rect->dy*( reg[i].y - main_rect->y ) >= 0)
 		  reg_up[reg_up_size++] = reg[i];
 	  else
 		  reg_down[reg_down_size++] = reg[i];
 	}
-	//对于已经被标记过极性的区域，我们没必要再进行极性分析
+	//对于已经被标记过极性的区域，我们没必要再进行极性分析 (For regions that have been marked with polarity, we do not need to perform polarity analysis)
 	if( (same_pol_cnt + opp_pol_cnt) > reg_size/2)
 	{
 		if(same_pol_cnt > opp_pol_cnt )
@@ -2077,7 +2087,7 @@ bool isArcSegment(point2i * reg, int reg_size, struct rect * main_rect, image_do
 		}
 		return TRUE;
 	}
-	//计算与主方向相同的上半部分区域质心
+	//计算与主方向相同的上半部分区域质心 (Calculate the centroid of the upper half area with the same main direction)
 	reg_up_x = reg_up_y = 0;
 	//sum = 0;
 	reg_up_sin_s = reg_up_cos_s = 0;
@@ -2093,7 +2103,7 @@ bool isArcSegment(point2i * reg, int reg_size, struct rect * main_rect, image_do
 	//reg_up_x /= sum;
 	//reg_up_y /= sum;
 	reg_up_theta = atan2(reg_up_sin_s,reg_up_cos_s);
-	//计算主方向上的下半部分区域质心
+	//计算主方向上的下半部分区域质心 (Calculate the centroid of the lower half of the area in the main direction)
 	reg_down_x = reg_down_y = 0;
 	//sum = 0;
 	reg_down_sin_s = reg_down_cos_s = 0;
@@ -2110,35 +2120,35 @@ bool isArcSegment(point2i * reg, int reg_size, struct rect * main_rect, image_do
 	//reg_down_y /= sum;
 	reg_down_theta = atan2(reg_down_sin_s,reg_down_cos_s);
 	main_theta  = atan2(reg_up_sin_s+reg_down_sin_s,reg_up_cos_s+reg_down_cos_s);
-	//估计两个区域方向
+	//估计两个区域方向 (Estimate two regional orientations)
 	//reg_up_theta = get_theta(reg_up,reg_up_size,reg_up_x,reg_up_y,modgrad,main_rect->theta,prec);
 	//reg_down_theta = get_theta(reg_down,reg_down_size,reg_down_x,reg_down_y,modgrad,main_rect->theta,prec);
-	//旋转到0°进行比较theta,reg_up_theta,reg_down_theta
+	//旋转到0°进行比较theta,reg_up_theta,reg_down_theta (Rotate to 0° to compare theta,reg_up_theta,reg_down_theta)
 	temp1 = angle_diff_signed(reg_up_theta,main_theta);
 	temp2 = angle_diff_signed(reg_down_theta,main_theta);
 	/*if(temp1>= M_PI/2 || temp1 <= -M_PI/2)
 		temp1 += 0;
 	if(temp2>= M_PI/2 || temp2 <= -M_PI/2)
 		temp2 += 0;*/
-	//if(temp1 >= prec/10 && temp2 <= -prec/10)//顺时针,边缘的梯度方向与弧的指向圆心方向相反，polarity = -1
-	if(temp1 >= M_1_8_PI/10 && temp2 <= -M_1_8_PI/10)//实验证明取定值效果更好
+	//if(temp1 >= prec/10 && temp2 <= -prec/10)//顺时针,边缘的梯度方向与弧的指向圆心方向相反，polarity = -1 (Clockwise, the gradient direction of the edge is opposite to the direction of the arc pointing to the center of the circle, polarity = -1)
+	if(temp1 >= M_1_8_PI/10 && temp2 <= -M_1_8_PI/10)//实验证明取定值效果更好 (Experiments show that the fixed value is better)
 	{
 		main_rect->polarity = -1;
 		rect_up->polarity = -1;
 	    rect_down->polarity = -1;
-		//标记极性
+		//标记极性 (mark polarity)
 	    for ( i = 0; i < reg_size; i++)
 	    {
 			pol->data[reg[i].y*pol->xsize+reg[i].x] = OPP_POL;//-1
 	    }
 	}
-	//else if(temp1 <= -prec/10 && temp2 >= prec/10)//逆时针，边缘的梯度方向与弧的指向圆心方向相同，polarity = 1
-	else if(temp1 <= -M_1_8_PI/10 && temp2 >= M_1_8_PI/10)//实验证明取定值效果更好
+	//else if(temp1 <= -prec/10 && temp2 >= prec/10)//逆时针，边缘的梯度方向与弧的指向圆心方向相同，polarity = 1 (Counterclockwise, the gradient direction of the edge is the same as the direction of the arc pointing to the center of the circle, polarity = 1)
+	else if(temp1 <= -M_1_8_PI/10 && temp2 >= M_1_8_PI/10)//实验证明取定值效果更好 (Experiments show that the fixed value is better)
 	{
 		main_rect->polarity = 1;
 		rect_up->polarity = 1;
 	    rect_down->polarity = 1;
-		//标记极性
+		//标记极性 (mark polarity)
 	    for ( i = 0; i < reg_size; i++)
 	    {
 			pol->data[reg[i].y*pol->xsize+reg[i].x] = SAME_POL;//1
@@ -2146,7 +2156,7 @@ bool isArcSegment(point2i * reg, int reg_size, struct rect * main_rect, image_do
 	}
 	else
 	{
-		//在region_grow中已经置为USED了
+		//在region_grow中已经置为USED了 (It has been set to USED in region_grow)
 		//for ( i = 0; i< reg_size; i++)
 		//	used->data[reg[i].y*used->xsize+reg[i].x] = USED;
 		return FALSE;
@@ -2179,7 +2189,7 @@ double * LineSegmentDetection( int * n_out,
   double * return_value;
   image_double scaled_image,angles,modgrad;
   image_char used;
-  image_char pol;  //对于构成圆弧的像素标记极性，如果梯度的方向和弧的方向指向一致，则为SAME_POLE,否则为OPP_POLE,该标记初始是为0
+  image_char pol;  //对于构成圆弧的像素标记极性，如果梯度的方向和弧的方向指向一致，则为SAME_POLE,否则为OPP_POLE,该标记初始是为0 (For the polarity of the pixel marker that forms the arc, if the direction of the gradient is the same as the direction of the arc, it is SAME_POLE, otherwise it is OPP_POLE, and the marker is initially 0)
   image_int region = NULL;
   struct coorlist * list_p;
   struct coorlist * list_p_temp;
@@ -2221,16 +2231,21 @@ double * LineSegmentDetection( int * n_out,
   if( scale != 1.0 )
     {
 	  //按照scale进行高斯降采样的图像，注意宽高是上取整，设采样后高宽为imgN*imgM
+	  //(The image for Gaussian downsampling according to the scale, note that the width and height are rounded up, 
+	  //set the height and width after sampling to imgN*imgM)
       scaled_image = gaussian_sampler( image, scale, sigma_scale );
 	  //返回一张梯度角度顺时针旋转90°后的align角度图angles，如果梯度角度是(gx,gy)->(-gy,gx)，
 	  //和梯度的模的图modgrad,然后按照n_bins进行伪排序返回链表的头指针list_p,里面存的是坐标
+	  //(Return a graph of align angles after the gradient angle is rotated 90° clockwise. If the gradient angle 
+	  //is (gx,gy)->(-gy,gx), and the graph modgrad of the gradient's modulus, then pseudo-sort according to 
+	  //n_bins and return The head pointer list_p of the linked list, which stores the coordinates)
 	  angles = ll_angle( scaled_image, rho, &list_p,&modgrad, (unsigned int) n_bins );
       free_image_double(scaled_image);
     }
   else
     angles = ll_angle( image, rho, &list_p,&modgrad,(unsigned int) n_bins );
-  xsize = angles->xsize;//降采样后的图像的x size，宽度imgM
-  ysize = angles->ysize;//降采样后的图像的y size，高度imgN
+  xsize = angles->xsize;//降采样后的图像的x size，宽度imgM (The x size of the downsampled image, the width imgM)
+  ysize = angles->ysize;//降采样后的图像的y size，高度imgN (The y size of the downsampled image, the height imgN)
 
   /* Number of Tests - NT
 
@@ -2250,12 +2265,16 @@ double * LineSegmentDetection( int * n_out,
   min_reg_size = (int) (-logNT/log10(p)); /* minimal number of point2is in region that can give a meaningful event，每个矩形区域内align point2i最小数量*/
   /* initialize some structures */
   if( reg_img != NULL && reg_x != NULL && reg_y != NULL ) /* save region data */
+	//(Apply for an int type memory of the same size as the image after downsampling. 
+	//The function of this memory is to mark the detected line segment serial number in the 
+	//corresponding image grid. This part is optional)
     region = new_image_int_ini(angles->xsize,angles->ysize,0);//申请与降采样后图像一样大小的int类型的内存，该内存的作用是将检测到的线段序号标到相应的图像格子里，该部分可有可无
-  used = new_image_char_ini(xsize,ysize,NOTUSED);//申请与降采样后图像一样大小的char类型的内存
-  pol  = new_image_char_ini(xsize,ysize,NOTDEF_POL);//像素点处的梯度和弧指向的方向的极性标记
+  used = new_image_char_ini(xsize,ysize,NOTUSED);//申请与降采样后图像一样大小的char类型的内存 (Allocate a char type memory of the same size as the downsampled image)
+  pol  = new_image_char_ini(xsize,ysize,NOTDEF_POL);//像素点处的梯度和弧指向的方向的极性标记 (The gradient at the pixel point and the polarity marker of the direction the arc is pointing)
   reg = (struct point2i *) calloc( (size_t) (xsize*ysize), sizeof(struct point2i) );
   if( reg == NULL ) error("not enough memory!");
 
+  //(Record the head pointer of the head linked list, which needs to be used for memory release later)
   list_p_temp = list_p;//记录头链表的头指针，后面需要利用该头指针进行内存释放
   /* search for line segments */
   for(; list_p_temp != NULL; list_p_temp = list_p_temp->next )
@@ -2266,7 +2285,10 @@ double * LineSegmentDetection( int * n_out,
       {
         /* find the region of connected point2i and ~equal angle */
 		//reg是长度为imgN*imgM的一维point2i型数组，有足够大的空间存储生长的区域，reg_size是里面存储了数据的数量，记录的是区域的point2i
+		//(reg is a one-dimensional point2i array of length imgN*imgM, which has enough space to store the growing area, 
+		//reg_size is the amount of data stored in it, and records the point2i of the area)
 		//reg_angle是该区域的主方向的double型变量，存的角度是弧度制
+		//(reg_angle is a double variable of the main direction of the area, and the stored angle is in radians)
 		  seed_cnt ++;
         region_grow( list_p_temp->x, list_p_temp->y, angles, reg, &reg_size,&reg_angle, used, prec );
 
@@ -2279,6 +2301,8 @@ double * LineSegmentDetection( int * n_out,
 
         /* construct rectangular approximation for the region */
 		//根据生长的区域得到近似外接矩阵的参数，矩形参数包括:起点，终点，方向theta，宽度等
+		//(The parameters of the approximate circumscribed matrix are obtained according to the growing area. 
+		//The parameters of the rectangle include: start point, end point, direction theta, width, etc.)
         region2rect(reg,reg_size,modgrad,reg_angle,prec,p,&main_rect);
 		if( FALSE == isArcSegment(reg,reg_size,&main_rect,angles,used,pol,prec,p,&rect_up,&rect_down))
 			continue;
@@ -2293,13 +2317,14 @@ double * LineSegmentDetection( int * n_out,
          */
 
         //提纯，通过重新生长区域来达到期望的密度阈值 
+		//(Purify, by regrowing the region to the desired density threshold)
         if( !refine( reg, &reg_size, modgrad, reg_angle,
                      prec, p, &main_rect, used, angles, density_th ) ) continue;
 
 		refine_cnt++;
         // compute NFA value 
-        log_nfa = rect_improve(&main_rect,angles,logNT,log_eps);//通过改善矩形区域以尝试得到期望的nfa值
-        if( log_nfa <= log_eps ) //错误控制
+        log_nfa = rect_improve(&main_rect,angles,logNT,log_eps);//通过改善矩形区域以尝试得到期望的nfa值 (Try to get the desired nfa value by refining the rectangular area)
+        if( log_nfa <= log_eps ) //错误控制 (error control)
 			continue;
         // A New Line Segment was found! 
         ++ls_count;  // increase line segment counter 
@@ -2341,7 +2366,7 @@ double * LineSegmentDetection( int * n_out,
 			file1<<main_rect.x1<<'\t'<<main_rect.y1<<'\t'<<main_rect.x2<<'\t'<<main_rect.y2<<'\t'<<(main_rect.theta*180/M_PI)<<endl;
 			file1.close();
 			
-			if(ls_count == 1)//保持第1根线段的区域
+			if(ls_count == 1)//保持第1根线段的区域 (keep the area of ??the 1st line segment)
 			{
 				file2.open("D:\\Graduate Design\\picture\\sp\\reg.txt",ios::app);
 				for(i=0; i<reg_size; i++)
@@ -2351,6 +2376,7 @@ double * LineSegmentDetection( int * n_out,
 			*/
 		//-------------------------------------------------------------------------------------------------------
         /* add region number to 'region' image if needed */ //将检测到的线段序号标到相应的图像格子里，该部分可有可无
+															//(Mark the detected line segment number in the corresponding image grid, this part is optional)
         if( region != NULL )
           for(i=0; i<reg_size; i++)
             region->data[ reg[i].x + reg[i].y * region->xsize ] = ls_count;
@@ -2368,6 +2394,7 @@ double * LineSegmentDetection( int * n_out,
   free( (void *) reg );
 //  free( (void *) mem_p );
   //释放分成1024区的存储梯度从大到小的链表,mycode
+  //(Release the linked list of storage gradients divided into 1024 areas from large to small, mycode)
   //---------------------------------------
   list_p_temp = list_p->next;
   while(list_p_temp != NULL)
@@ -2412,16 +2439,30 @@ double * LineSegmentDetection( int * n_out,
 /*------------------------------------------------------------------------------------------------*/
 /**
 my code,Alan Lu
-输入
+输入 (enter)
 img  : 输入图像的一维double型数组,大小为Y*X，按照行优先存储，传入前需要拥有内存
 X    : 输入图像的columns
 Y    ：输入图像的rows
-输出
+
+img : The one-dimensional double array of the input image, the size is Y*X, it is stored in row priority, and memory is required before passing in
+X : the columns of the input image
+Y : the rows of the input image
+
+输出 (output)
 n_out: lsd算法检测得到的线段的数量n，return的返回值是n条线段，为一维double型数组，长度为8*n，每8个为一组，存着x1,y1,x2,y2,dx,dy,width,polarity
 reg_img: 输出标记区域，是一维的int型数组，大小reg_y*reg_x,在相应的像素位置标记着它属于的线段(1,2,3,...n),如果值为0表示不属于任何线段.
          假如外部是int * region_img,则只需要 &region_img,就可以得到标记区域的返回，不需要时直接NULL传入
 reg_x  : 输出标记区域的columns,不需要时直接NULL传入
 reg_y  : 输出标记区域的rows,不需要时直接NULL传入
+
+n_out: The number n of line segments detected by the lsd algorithm, the return value of return is n line segments, 
+	   which is a one-dimensional double array with a length of 8*n, each 8 is a group, and stores x1, y1, x2, y2 ,dx,dy,width,polarity
+reg_img: The output marking area is a one-dimensional int array, the size is reg_y*reg_x, and the line segment it belongs 
+	     to (1, 2, 3, ... n) is marked at the corresponding pixel position. If the value is 0, it does not belong to any 
+		 line segment. If the outside is int * region_img, you only need &region_img, you can get the return of the marked 
+		 region, and directly pass in NULL when not needed
+reg_x : output the columns of the marked area, directly pass in NULL when not needed
+reg_y : Output the rows of the marked area, directly pass in NULL when not needed
 */
 double * mylsd(int * n_out, double * img, int X, int Y, int ** reg_img, int * reg_x, int * reg_y)
 {
@@ -2442,9 +2483,12 @@ double * mylsd(int * n_out, double * img, int X, int Y, int ** reg_img, int * re
                                reg_img, reg_x, reg_y );
 }
 //lines: 输入的lines_num条线段，每条线段8个值，存着x1,y1,x2,y2,dx,dy,width,polarity
+//(lines: input lines_num line segments, each line segment has 8 values, storing x1, y1, x2, y2, dx, dy, width, polarity)
 //lines_num:
 //new_lines_num: 拒绝短线段后的new_lines_num条线段，存在lines的前面，而短的线段会放到尾巴处
+//(new_lines_num: new_lines_num line segments after rejecting short line segments, exist in front of lines, and short line segments will be placed at the tail)
 //此处长度限制参数很重要：目前取8^2, 14^2
+//(The length limit parameter is very important here: currently take 8^2, 14^2)
 void     rejectShortLines(double * lines, int lines_num, int * new_lines_num )
 {
 	int    new_num = 0;
@@ -2453,7 +2497,7 @@ void     rejectShortLines(double * lines, int lines_num, int * new_lines_num )
 	new_num = lines_num - shor_lines_num;
 	for ( int i = 0; i< new_num; i++)
 	{
-		if( lines[i*8+6] < 10)//reject short lines, the length threshold is important: 8,14 最后需要调节
+		if( lines[i*8+6] < 10)//reject short lines, the length threshold is important: 8,14 最后需要调节 (Finally need to adjust)
 		{
 			for ( int j = 0; j<8; j++)
 			{
@@ -2461,7 +2505,7 @@ void     rejectShortLines(double * lines, int lines_num, int * new_lines_num )
 				lines[i*8+j] = lines[(new_num-1)*8+j];
 				lines[(new_num-1)*8+j] = temp;
 			}
-			i--; //调换后需要检查调换来的线段长度，需要回退
+			i--; //调换后需要检查调换来的线段长度，需要回退 (After the exchange, it is necessary to check the length of the exchanged line segment, and it needs to be rolled back.)
 			shor_lines_num++;
 			new_num = lines_num - shor_lines_num;
 		}
@@ -2470,36 +2514,41 @@ void     rejectShortLines(double * lines, int lines_num, int * new_lines_num )
 }
 
 /*----------------------------------------------------------------------------*/
-//输入：
-//start_angle,end_angle, 角度方位是(-pi,pi).  
+//输入：(enter)
+//start_angle,end_angle, 角度方位是(-pi,pi). (The angular orientation is (-pi,pi).)
 //  pi    ------->x  0
 //        |
 //        |
 //       y\/ pi/2
 //polarity: 当polarity为1时，表示的是从start_angle按照逆时针方向旋转到end_angle的角度;当polarity为-1时，表示的是从start_angle按照顺时针方向旋转到end_angle的角度;
-//返回值： 旋转角度coverage
+//(polarity: When the polarity is 1, it means the angle from the start_angle to the end_angle in the counterclockwise direction; 
+//			 when the polarity is -1, it means the angle from the start_angle to the end_angle in the clockwise direction;)
+//返回值： 旋转角度coverage (Return value: rotation angle coverage)
 inline double rotateAngle(double start_angle, double end_angle, int polarity)
 {
 	double coverage;
 	//首先需要将angle1和angle2转换到 0 ~ 2pi
-	if(start_angle < 0) start_angle += M_2__PI;//限制角度在0~2pi之间
+	//(First need to convert angle1 and angle2 to 0 ~ 2pi)
+	if(start_angle < 0) start_angle += M_2__PI;//限制角度在0~2pi之间 (The limit angle is between 0~2pi)
 	if(end_angle < 0 ) end_angle += M_2__PI;
-	if(polarity == 1)//极性为1
+	if(polarity == 1)//极性为1 (polarity is 1)
 	{
 		coverage = start_angle - end_angle;
 	}
-	else //极性为-1
+	else //极性为-1 (Polarity is -1)
 	{ 
 		coverage = end_angle - start_angle;
 	}
 	if(coverage < 0) coverage += M_2__PI;
 	return coverage;
 }
-//对线段按照凸性和距离进行分组
+//对线段按照凸性和距离进行分组 (Group segments by convexity and distance)
 //lines: 输入的lines_num条线段，每条线段8个值，存着x1,y1,x2,y2,dx,dy,length,polarity
+//(lines: input lines_num line segments, each line segment has 8 values, storing x1, y1, x2, y2, dx, dy, length, polarity)
 //lines_num:
-//输出分组groups. 每个组是一个vector<int>
-//注意：切记用完region,需要在函数外面手动释放region
+//输出分组groups. 每个组是一个vector<int> (Output grouped groups. Each group is a vector<int>)
+//注意：切记用完region,需要在函数外面手动释放region 
+//(Note: Remember to use up the region, you need to manually release the region outside the function)
 void groupLSs(double *lines, int line_num, int * region, int imgx, int imgy, vector<vector<int>> * groups)
 {
 	if(line_num == 0)
@@ -2507,88 +2556,90 @@ void groupLSs(double *lines, int line_num, int * region, int imgx, int imgy, vec
 		groups = NULL;
 		return;
 	}
-	unsigned char isEnd = 0;//是否还可以继续搜寻
-	int currentLine; //当前线段
+	unsigned char isEnd = 0;//是否还可以继续搜寻 (Is it possible to continue searching)
+	int currentLine; //当前线段 (current line segment)
 	char * label = (char*)calloc(line_num, sizeof(char));
 	memset(label,0,sizeof(char)*line_num); //init the label all to be zero
-	int * group_up = (int*)malloc(sizeof(int)*line_num);//申请足够内存，存储延线段方向得到的分组的线段
-	int * group_down = (int*)malloc(sizeof(int)*line_num);//存储线段反方向分组的线段
+	int * group_up = (int*)malloc(sizeof(int)*line_num);//申请足够内存，存储延线段方向得到的分组的线段 (Apply enough memory to store the grouped line segments obtained by extending the direction of the line segment)
+	int * group_down = (int*)malloc(sizeof(int)*line_num);//存储线段反方向分组的线段 (Stores line segments grouped in opposite directions)
 	int group_up_cnt,group_down_cnt;
 	//coorlist * head,*tail;
 	vector<int> group_temp;
 	point2d dir_vec1,dir_vec2;
-	point2i *votebin = (point2i*)calloc(line_num,sizeof(point2i));//申请足够内存，用来投票. x记录线段索引，y记录票数
+	point2i *votebin = (point2i*)calloc(line_num,sizeof(point2i));//申请足够内存，用来投票. x记录线段索引，y记录票数 (Apply for enough memory to vote. x records the line segment index, y records the number of votes)
 	int bincnt = 0;
 	int xx,yy,temp;
 	double start_angle,end_angle,angle_delta;
 	for ( int i = 0; i<line_num; i++)
 	{
-		if( label[i] == 0)//未被分组过
+		if( label[i] == 0)//未被分组过 (未被分组过)
 		{
-			group_up_cnt = group_down_cnt = 0;//每开始寻找一组，需要置零
+			group_up_cnt = group_down_cnt = 0;//每开始寻找一组，需要置零 (每开始寻找一组，需要置零)
 			//先从第i条线段的头部开始搜索，进行分组,结果存在group_up里面
-			group_up[group_up_cnt++] = i;//记录线段i,注意线段是0~line_num-1
-			isEnd = 0;//置零，表示还可以从当前线段开始搜索，还未结束
+			//(First start the search from the head of the i-th line segment, group it, and store the result in group_up)
+			group_up[group_up_cnt++] = i;//记录线段i,注意线段是0~line_num-1 (Record line segment i, note that the line segment is 0~line_num-1)
+			isEnd = 0;//置零，表示还可以从当前线段开始搜索，还未结束 (Set to zero, it means that the search can still start from the current line segment, but it is not over yet)
 	     	currentLine = i;
 			while(isEnd == 0)
 			{
-				label[currentLine] = 1; //标记该线段已经被分组
+				label[currentLine] = 1; //标记该线段已经被分组 (mark that the line segment has been grouped)
 				//head = tail = NULL;
 		        bincnt = 0;
 				dir_vec1.x = lines[currentLine*8+4];
 				dir_vec1.y = lines[currentLine*8+5];
-				if ( lines[currentLine*8+7] == 1)//极性为正
+				if ( lines[currentLine*8+7] == 1)//极性为正 (positive polarity)
 				{
-					//将dir_vec1逆时针旋转45°
+					//将dir_vec1逆时针旋转45° (Rotate dir_vec1 45° counterclockwise)
 					dir_vec2.x = (dir_vec1.x + dir_vec1.y)*0.707106781186548; // sqrt(2)/2 = 0.707106781186548
 				    dir_vec2.y = (-dir_vec1.x + dir_vec1.y)*0.707106781186548;
 				}
 				else
 				{
-					//将dir_vec1顺时针旋转45°
+					//将dir_vec1顺时针旋转45° (Rotate dir_vec1 45° clockwise)
 					dir_vec2.x = (dir_vec1.x - dir_vec1.y)*0.707106781186548; // sqrt(2)/2 = 0.707106781186548
 				    dir_vec2.y = (dir_vec1.x + dir_vec1.y)*0.707106781186548;
 				}
 				for ( int j = 1; j<=4; j++)
-					for ( int k = 1; k<=4; k++)//在4x4邻域内搜索
+					for ( int k = 1; k<=4; k++)//在4x4邻域内搜索 (Search within a 4x4 neighborhood)
 					{
 						xx = (int)(lines[currentLine*8+2]*0.8+j*dir_vec1.x+k*dir_vec2.x);
 						yy = (int)(lines[currentLine*8+3]*0.8+j*dir_vec1.y+k*dir_vec2.y);
-						if(xx < 0 || xx >= imgx || yy < 0 || yy >= imgy)//越界
+						if(xx < 0 || xx >= imgx || yy < 0 || yy >= imgy)//越界 (out of bounds)
 							continue;
 						temp = region[yy*imgx+xx];
-						if(temp>0)//表示有线段的支持区域，在1~line_num
+						if(temp>0)//表示有线段的支持区域，在1~line_num (Indicates the support area of ??the line segment, in 1~line_num)
 						{
-							region[yy*imgx+xx] = -temp;//取负数标记
+							region[yy*imgx+xx] = -temp;//取负数标记 (take negative sign)
 							for (xx = 0; xx<bincnt; xx++)
 							{
-								if(votebin[xx].x == temp - 1)//如果以前投票过，直接在相应的bin的票数上加1
+								if(votebin[xx].x == temp - 1)//如果以前投票过，直接在相应的bin的票数上加1 (If you have voted before, add 1 directly to the votes of the corresponding bin)
 								{
 									votebin[xx].y++;
 									break;
 								}
 							}
-							if(xx == bincnt)//如果以前没有投票过，增加该线段，并记录票数为1
+							if(xx == bincnt)//如果以前没有投票过，增加该线段，并记录票数为1 (If no votes have been made before, add the line segment and record the vote as 1)
 							{
 								if(bincnt == line_num)
 									error("group ls error1");
 								votebin[bincnt].x = temp - 1;
 								votebin[bincnt].y = 1;
-								bincnt++; //bin的总数加1
+								bincnt++; //bin的总数加1 (Add 1 to the total number of bins)
 							}
 						}
 					}
-			    //寻找投票最多的线段，并且需要满足数量大于一定值
+			    //寻找投票最多的线段，并且需要满足数量大于一定值 
+				//(Find the line segment with the most votes, and the number needs to be greater than a certain value)
 			    temp = 0;
 				for ( int j = 0; j<bincnt; j++)
 				{
 					if(votebin[j].y>temp)
 					{
 						temp = votebin[j].y;
-						xx = votebin[j].x;//借用xx变量
+						xx = votebin[j].x;//借用xx变量 (borrow xx variable)
 					}
 				}
-				if ( temp >= 5 && label[xx] == 0 && lines[8*xx+7] == lines[8*i+7] )//待实验调整参数值
+				if ( temp >= 5 && label[xx] == 0 && lines[8*xx+7] == lines[8*i+7] )//待实验调整参数值 (Parameter values ??to be adjusted for experimentation)
 				{
 					if(group_up_cnt == line_num)
 					   error("group ls error2");
@@ -2596,105 +2647,108 @@ void groupLSs(double *lines, int line_num, int * region, int imgx, int imgy, vec
 					start_angle = atan2(lines[8*group_up[yy]+5],lines[8*group_up[yy]+4]);
 					end_angle = atan2(lines[8*xx+5],lines[8*xx+4]);
 					angle_delta = rotateAngle(start_angle,end_angle,(int)lines[8*i+7]);
-					if(angle_delta <= M_3_8_PI)//相邻两线段的旋转夹角也需要满足在pi/4内
+					if(angle_delta <= M_3_8_PI)//相邻两线段的旋转夹角也需要满足在pi/4内 (The rotation angle of two adjacent line segments also needs to be within pi/4)
 					{
-						group_up[group_up_cnt++] = xx;//压入线段
-						currentLine = xx; //更新当前搜索线段
+						group_up[group_up_cnt++] = xx;//压入线段 (Push line segment)
+						currentLine = xx; //更新当前搜索线段 (Update the current search segment)
 					}
 					else
 						isEnd = 1;
 				}
 				else
-					isEnd = 1;//结束，已经找不到可以分组的线段了
+					isEnd = 1;//结束，已经找不到可以分组的线段了 (It's over, I can't find any line segments that can be grouped)
 			}
 			//先从第i条线段的尾部开始搜索，进行分组,结果存在group_down里面。记住，第i条线段在group_up和group_down中的0索引处都储存了
+			//(First start the search from the end of the i-th line segment, perform grouping, and store the results in group_down. 
+			//Remember that the ith line segment is stored at index 0 in both group_up and group_down)
 			group_down[group_down_cnt++] = i; 
-			isEnd = 0;//置零，表示还可以从当前线段开始搜索，还未结束
+			isEnd = 0;//置零，表示还可以从当前线段开始搜索，还未结束 (Set to zero, it means that the search can still start from the current line segment, but it is not over yet)
 	     	currentLine = i;
 			while(isEnd == 0)
 			{
-				label[currentLine] = 1; //标记该线段已经被分组
+				label[currentLine] = 1; //标记该线段已经被分组 (mark that the line segment has been grouped)
 				//head = tail = NULL;
 		        bincnt = 0;
 				dir_vec1.x = -lines[currentLine*8+4];
 				dir_vec1.y = -lines[currentLine*8+5];
-				if ( lines[currentLine*8+7] == 1)//极性相同
+				if ( lines[currentLine*8+7] == 1)//极性相同 (same polarity)
 				{
-					//将dir_vec1顺时针旋转45°
+					//将dir_vec1顺时针旋转45° (Rotate dir_vec1 45° clockwise)
 					dir_vec2.x = (dir_vec1.x - dir_vec1.y)*0.707106781186548; // sqrt(2)/2 = 0.707106781186548
 				    dir_vec2.y = (dir_vec1.x + dir_vec1.y)*0.707106781186548;
 				}
 				else
 				{
-					//将dir_vec1顺时针旋转45°
+					//将dir_vec1顺时针旋转45° (Rotate dir_vec1 45° clockwise)
 					dir_vec2.x = (dir_vec1.x + dir_vec1.y)*0.707106781186548; // sqrt(2)/2 = 0.707106781186548
 				    dir_vec2.y = (-dir_vec1.x + dir_vec1.y)*0.707106781186548;
 				}
 				for ( int j = 1; j<=4; j++)
-					for ( int k = 1; k<=4; k++)//在4x4邻域内搜索
+					for ( int k = 1; k<=4; k++)//在4x4邻域内搜索 (Search within a 4x4 neighborhood)
 					{
 						xx = (int)(lines[currentLine*8+0]*0.8+j*dir_vec1.x+k*dir_vec2.x);
 						yy = (int)(lines[currentLine*8+1]*0.8+j*dir_vec1.y+k*dir_vec2.y);
-						if(xx < 0 || xx >= imgx || yy < 0 || yy >= imgy)//越界
+						if(xx < 0 || xx >= imgx || yy < 0 || yy >= imgy)//越界 (out of bounds)
 							continue;
 						temp = region[yy*imgx+xx];
-						if(temp>0)//表示有线段的支持区域，在1~line_num
+						if(temp>0)//表示有线段的支持区域，在1~line_num (Indicates the support area of ??the line segment, in 1~line_num)
 						{
-							region[yy*imgx+xx] = -temp;//取负数标记
+							region[yy*imgx+xx] = -temp;//取负数标记 (take negative sign)
 							for (xx = 0; xx<bincnt; xx++)
 							{
-								if(votebin[xx].x == temp - 1)//如果以前投票过，直接在相应的bin的票数上加1
+								if(votebin[xx].x == temp - 1)//如果以前投票过，直接在相应的bin的票数上加1 (If you have voted before, add 1 directly to the votes of the corresponding bin)
 								{
 									votebin[xx].y++;
 									break;
 								}
 							}
-							if(xx == bincnt)//如果以前没有投票过，增加该线段，并记录票数为1
+							if(xx == bincnt)//如果以前没有投票过，增加该线段，并记录票数为1 (If no votes have been made before, add the line segment and record the vote as 1)
 							{
 								if(bincnt == line_num)
 									error("group ls error3");
 								votebin[bincnt].x = temp - 1;
 								votebin[bincnt].y = 1;
-								bincnt++; //bin的总数加1
+								bincnt++; //bin的总数加1 (Add 1 to the total number of bins)
 							}
 						}
 					}
 			    //寻找投票最多的线段，并且需要满足数量大于一定值
+				//(Find the line segment with the most votes, and the number needs to be greater than a certain value)
 			    temp = 0;
 				for ( int j = 0; j<bincnt; j++)
 				{
 					if(votebin[j].y>temp)
 					{
 						temp = votebin[j].y;
-						xx = votebin[j].x;//借用xx变量
+						xx = votebin[j].x;//借用xx变量 (borrow xx variable)
 					}
 				}
-				if ( temp >= 5 && label[xx] == 0 && lines[8*xx+7] == lines[8*i+7])//待实验调整参数值
+				if ( temp >= 5 && label[xx] == 0 && lines[8*xx+7] == lines[8*i+7])//待实验调整参数值 (Parameter values ??to be adjusted for experimentation)
 				{
 					if(group_down_cnt == line_num)
 					   error("group ls error2");
-					yy = group_down_cnt-1;//借用yy变量
+					yy = group_down_cnt-1;//借用yy变量 (borrow yy variable)
 					start_angle = atan2(lines[8*group_down[yy]+5],lines[8*group_down[yy]+4]);
 					end_angle = atan2(lines[8*xx+5],lines[8*xx+4]);
-					angle_delta = rotateAngle(end_angle,start_angle,(int)lines[8*i+7]);//注意此时需要调换一下，因为是从尾部开始搜索
-					if(angle_delta < M_3_8_PI)//相邻两线段的旋转夹角也需要满足在pi/4内,pi*3/8 = 66.5°
+					angle_delta = rotateAngle(end_angle,start_angle,(int)lines[8*i+7]);//注意此时需要调换一下，因为是从尾部开始搜索 (Note that it needs to be replaced at this time, because the search starts from the end)
+					if(angle_delta < M_3_8_PI)//相邻两线段的旋转夹角也需要满足在pi/4内,pi*3/8 = 66.5° (The rotation angle of two adjacent line segments also needs to be within pi/4, pi*3/8 = 66.5°)
 					{
-						group_down[group_down_cnt++] = xx; //压入线段
-						currentLine = xx; //更新当前搜索线段
+						group_down[group_down_cnt++] = xx; //压入线段 (Push line segment)
+						currentLine = xx; //更新当前搜索线段 (Update the current search segment)
 					}
 					else
 						isEnd = 1;
 				}
 				else
-					isEnd = 1;//结束，已经找不到可以分组的线段了
+					isEnd = 1;//结束，已经找不到可以分组的线段了 (It's over, I can't find any line segments that can be grouped)
 			}
-			(*groups).push_back(group_temp); //添加线段分组
+			(*groups).push_back(group_temp); //添加线段分组 (Add line segment grouping)
 			temp = (*groups).size()-1;
 			for (int j = group_down_cnt-1; j>= 0; j--)
 			{
 				(*groups)[temp].push_back(group_down[j]);
 			}
-			for (int j = 1; j<group_up_cnt; j++)//由于第i条线段在group_up和group_down都储存了，所以就从索引1开始
+			for (int j = 1; j<group_up_cnt; j++)//由于第i条线段在group_up和group_down都储存了，所以就从索引1开始 (Since the i-th line segment is stored in both group_up and group_down, it starts from index 1)
 			{
 				(*groups)[temp].push_back(group_up[j]);
 			}
@@ -2705,14 +2759,18 @@ void groupLSs(double *lines, int line_num, int * region, int imgx, int imgy, vec
 	free(group_down);
 	free(votebin);
 }
-//计算groups中每个组的跨度
-//输入：
+//计算groups中每个组的跨度 (Calculate the span of each group in groups)
+//输入：(enter:)
 //lines: 输入的lines_num条线段，每条线段8个值，存着x1,y1,x2,y2,dx,dy,length,polarity
+//(lines: input lines_num line segments, each line segment has 8 values, storing x1, y1, x2, y2, dx, dy, length, polarity)
 //lines_num:
-//groups: 分组，每个分组都存着线段的索引
-//输出:
+//groups: 分组，每个分组都存着线段的索引 (Grouping, each grouping stores the index of the line segment)
+//输出: (outputs)
 //coverages: 每个组的跨度，当组内线段只有1条时，跨度为0. coverages的长度等于组的数量 = groups.size()
+// (The span of each group, when there is only 1 line segment in the group, the span is 0. The length of coverages is equal to the number of groups = groups.size())
 //注意，coverages用前不需要申请内存，coverages用完后，需要在函数外手动释放内存，长度等于分组数量
+//(Note that you do not need to apply for memory before coverages are used. After the coverages are used up, you need to manually release the 
+//memory outside the function. The length is equal to the number of groups.)
 void calcuGroupCoverage(double * lines, int line_num, vector<vector<int>> groups, double * &coverages)
 {
 	int groups_num = groups.size();
@@ -2722,7 +2780,7 @@ void calcuGroupCoverage(double * lines, int line_num, vector<vector<int>> groups
 	for ( int i = 0; i<groups_num; i++)
 	{
 		temp = groups[i].size()-1;
-		if(groups[i].size() == 0)//第i个分组只有1条线段，则跨度为0
+		if(groups[i].size() == 0)//第i个分组只有1条线段，则跨度为0 (The i-th group has only 1 line segment, then the span is 0)
 		{
 			coverages[i] = 0;
 		}
@@ -2738,8 +2796,9 @@ void calcuGroupCoverage(double * lines, int line_num, vector<vector<int>> groups
 //==============================================================================
 //====================================================================================================
 //================================clustering==========================================================
-//聚类
+//聚类 (clustering)
 //求points中第i行与initializations中第j行里每个元素的平方差总和,每行维度都为nDims
+//(Find the sum of the squared differences of each element in the i-th row in points and the j-th row in initializations, each row has dimension nDims)
 inline double squaredDifference(int & nDims, double *& points, int & i, double *& initializations, int & j)
 {
     double result = 0;
@@ -2748,15 +2807,20 @@ inline double squaredDifference(int & nDims, double *& points, int & i, double *
     return result;
 }
 /**
- *输入
+ *输入 (enter)
  *points: 待均值漂移的点集，总共有nPoints个点，每个点有nDims维度，是一维数组
+ *(points: The point set to be mean shifted, there are nPoints points in total, each point has nDims dimension, which is a one-dimensional array)
  *initPoints: 均值漂移初始化位置，在nxd空间中找均值漂移初始时开始搜索的位置，总共有initLength个点，每个点有nDims维度
+ *(initPoints: The initialization position of the mean shift, in the nxd space to find the position where the mean shift starts to search at the beginning, 
+			   there are a total of initLength points, and each point has nDims dimension)
  *sigma = 1
- *window_size: window parameter = distance_tolerance或者window parameter = distance_tolerance/2
- *accuracy_tolerance: 收敛容忍误差1e-6
- *iter_times: 迭代次数50
- *输出
+ *window_size: window parameter = distance_tolerance或者window parameter = distance_tolerance/2 (or)
+ *accuracy_tolerance: 收敛容忍误差1e-6 (Convergence tolerance error 1e-6)
+ *iter_times: 迭代次数50 (Iterations 50)
+ *输出 (outputs)
  *收敛的位置，位置个数与初始化搜索位置个数一样,我们将结果更新到initPoints,也就是它既是输入参数，也是输出参数，节省内存
+ *Convergence position, the number of positions is the same as the number of initial search positions, 
+ we update the result to initPoints, that is, it is both an input parameter and an output parameter, saving memory
  */
 void meanShift( double * points, int nPoints, int nDims, double * & initPoints, int initLength, double sigma, double window_size, double accuracy_tolerance, int iter_times )
 {
@@ -2766,26 +2830,27 @@ void meanShift( double * points, int nPoints, int nDims, double * & initPoints, 
     double * initializations = (double*)malloc(nQuerries * nDims * sizeof(double));
     memcpy(initializations, initPoints , nQuerries * nDims * sizeof(double));//copy
 
-    double sigma2 = sigma*sigma;//sigma平方
-    double radius2 = window_size *window_size;//平方
+    double sigma2 = sigma*sigma;//sigma平方 (sigma square)
+    double radius2 = window_size *window_size;//平方 (square)
     double tolerance = accuracy_tolerance;
-    int iters, maxiters = iter_times;//最大迭代次数
+    int iters, maxiters = iter_times;//最大迭代次数 (The maximum number of iterations)
    //返回与初始搜索点集一样大小的最终定位点集
+   //Returns a final set of anchor points of the same size as the initial set of search points
     double * finals = (double*)malloc(nQuerries * nDims * sizeof(double));;//最终定位点集的指针
     memcpy(finals, initializations, nQuerries * nDims * sizeof(double));
 	double * distances = (double*)malloc(nPoints*sizeof(double));
-    //printf("meanShift: nPoints:%d \tnDims: %d \tnQuerries:%d \n",nPoints,nDims,nQuerries);//打印
+    //printf("meanShift: nPoints:%d \tnDims: %d \tnQuerries:%d \n",nPoints,nDims,nQuerries);//打印 (Print)
     for (int loop = 0; loop < nQuerries; ++loop)
     {
         iters = 0;
         while (iters < maxiters)
         {
             bool flag = false;
-            double denominator = 0;//分母
-            for (int i = 0; i < nPoints; ++i)//对所有的点集进行遍历，找到落在搜索圆域内的点
+            double denominator = 0;//分母 (denominator)
+            for (int i = 0; i < nPoints; ++i)//对所有的点集进行遍历，找到落在搜索圆域内的点 (Traverse all point sets to find the points that fall within the search circle)
             {
-                distances[i] = squaredDifference(nDims, points, i, initializations, loop);//求距离的平方
-                if (distances[i] <= radius2)//在第loop个搜索中心的以sqrt(radius2)为半径的圆域内
+                distances[i] = squaredDifference(nDims, points, i, initializations, loop);// (find the square of the distance)
+                if (distances[i] <= radius2)//在第loop个搜索中心的以sqrt(radius2)为半径的圆域内 (In the circle domain with sqrt(radius2) as the radius of the search center of the loop)
                 {
                     flag = true;
                     denominator += exp(-distances[i] / sigma2);
@@ -2794,19 +2859,19 @@ void meanShift( double * points, int nPoints, int nDims, double * & initPoints, 
             if (!flag)
                 break;
             for (int j = 0; j < nDims; ++j)
-				finals[loop*nDims+j] = 0;//对最终定位点集中的第loop个点的向量赋值为0
+				finals[loop*nDims+j] = 0;//对最终定位点集中的第loop个点的向量赋值为0 (Assign 0 to the vector of the loop-th point in the final set of positioning points)
             for (int i = 0; i < nPoints; ++i)
                 if (distances[i] <= radius2)
                 {
-                    for (int j = 0; j < nDims; ++j)//每个内点向量的以一定权值累加
+                    for (int j = 0; j < nDims; ++j)//每个内点向量的以一定权值累加 (Each interior point vector is accumulated with a certain weight)
 						finals[loop*nDims+j] += exp(-distances[i] / sigma2) * points[i*nDims+j];
                 }
-            for (int j = 0; j < nDims; ++j)//权值归一化
+            for (int j = 0; j < nDims; ++j)//权值归一化 (Weight normalization)
 				finals[loop*nDims+j] /= denominator;
-            if (sqrt(squaredDifference(nDims, finals, loop, initializations, loop)) < tolerance)//相继两次的迭代中心在误差内了，则认为已经收敛，没必要再继续迭代
+            if (sqrt(squaredDifference(nDims, finals, loop, initializations, loop)) < tolerance)//相继两次的迭代中心在误差内了，则认为已经收敛，没必要再继续迭代 (If the center of the two consecutive iterations is within the error, it is considered to have converged, and there is no need to continue the iteration)
                 break;
             iters = iters + 1;
-            for (int j = 0; j < nDims; ++j)//更新迭代的搜索中心
+            for (int j = 0; j < nDims; ++j)//更新迭代的搜索中心 (Update iterative search center)
 				initializations[loop*nDims+j] = finals[loop*nDims+j];
         }
     }
@@ -2817,12 +2882,15 @@ void meanShift( double * points, int nPoints, int nDims, double * & initPoints, 
 }
 
 /***
- *输入
+ *输入 (enter)
  *points,待聚类的点集,为一维数组,nPoints个点，每个点维度是nDims
- *distance_threshold 决定聚类的距离阈值
+ *(points, the point set to be clustered, is a one-dimensional array, nPoints points, each point dimension is nDims)
+ *distance_threshold 决定聚类的距离阈值 (distance_threshold determines the distance threshold for clustering)
  *输出 outPoints
- *聚类后的点集 nOutPoints x nDims 
+ *聚类后的点集 nOutPoints x nDims (Clustered point set nOutPoints x nDims)
  *该函数要千万注意，当被调用后，函数内部会多申请nOutPoints个double型的数组内存，在外边使用完毕后，切记free(outPoints).
+ *(Pay attention to this function. When it is called, it will apply for nOutPoints double-type array 
+ 	memory inside the function. After using it outside, remember to free(outPoints).)
  */
 void clusterByDistance(double * points, int nPoints, int nDims, double distance_threshold,int number_control, double * & outPoints, int * nOutPoints)
 { 
@@ -2832,7 +2900,7 @@ void clusterByDistance(double * points, int nPoints, int nDims, double distance_
     centers.clear();
     counts.clear();
 	char * labeled = (char*)malloc(sizeof(char)*nPoints);
-    memset(labeled, 0, nPoints * sizeof(char));//初始化bool型标签为0
+    memset(labeled, 0, nPoints * sizeof(char));//初始化bool型标签为0 (Initialize the bool type label to 0)
 	if(nPoints == 1)
 	{
 		centers.push_back((double*)malloc(sizeof(double)*nDims));
@@ -2866,6 +2934,7 @@ void clusterByDistance(double * points, int nPoints, int nDims, double distance_
 		                    for (int k = 0; k < nDims; ++k)
 								centers[centers.size() - 1][k] += points[j*nDims+k];
 		                    labeled[j] = 1;
+							//(Control the number of clusters to prevent the mean center from drifting too far. 20 for center clustering and 10 for radius clustering)
 							if(counts[centers.size() - 1] >= number_control)//聚类数量控制，防止均值中心漂的太远  圆心聚类时20  半径聚类时10
 								break;
 		                }
@@ -2892,20 +2961,26 @@ void clusterByDistance(double * points, int nPoints, int nDims, double distance_
     }
     centers.resize(0);
     counts.resize(0);
-//	vector<double*>().swap(centers);//释放回收vector内存
+//	vector<double*>().swap(centers);//释放回收vector内存 (Free the reclaimed vector memory)
 //	vector<int>().swap(counts);
 }
 
 //聚类算法，均值漂移
+// (Release and recycle vecto clustering algorithm, mean shift r memory)
 //三个步骤，一是选取初始迭代点，二是均值漂移，三是去除重复点，从而得到聚类中心
+// (There are three steps, one is to select the initial iteration point, the other is to shift the mean value, and the third is to remove duplicate points to obtain the cluster center)
 //获得候选圆心的聚类中心(xi,yi)
-//输入：
-//points，一维点数据,长度为points_num x 2
-//distance_tolerance,数据点聚类的半径
-//输出：
+// (Get the cluster center (xi,yi) of the candidate circle center)
+//输入：(enter)
+//points，一维点数据,长度为points_num x 2 (points, one-dimensional point data, the length is points_num x 2)
+//distance_tolerance,数据点聚类的半径 (distance_tolerance, the radius of the clustering of data points)
+//输出：(outputs)
 //二维数据点的聚类中心 centers是一维double数组， 大小为 centers_num x 2
+// (Cluster centers of 2D data points centers is a 1D double array of size centers_num x 2)
 //正确返回值为1，出现错误为0. 例如points为空
+// (The correct return value is 1, and the error is 0. For example, points is empty)
 //切记切记！！！ centers为函数内部申请的内存，用来返回centers_num个点的聚类中心，使用完后一定要释放，记住free(centers)！！！
+// (Remember remember! ! ! The centers is the memory applied by the function, which is used to return the cluster centers of centers_num points. It must be released after use. Remember free(centers)! ! !)
 int  cluster2DPoints( double * points, int points_num, double distance_tolerance, double * & centers, int * centers_num)
 {
 	double xmax,xmin,ymax,ymin,xdelta,ydelta;
@@ -2927,17 +3002,17 @@ int  cluster2DPoints( double * points, int points_num, double distance_tolerance
 		if( points[addr+1] < ymin)
 			ymin = points[addr+1];
 	}
-	xmax += xmax*0.02;//避免xdelta、ydelta为0
+	xmax += xmax*0.02;//避免xdelta、ydelta为0 (Avoid xdelta, ydelta being 0)
 	xmin -= xmin*0.02;
 	ymax += ymax*0.02;
 	ymin -= ymin*0.02;
 	xdelta = (xmax-xmin);
-	ydelta = (ymax-ymin);//有问题，假设所有数据一样大，此处为0
+	ydelta = (ymax-ymin);//有问题，假设所有数据一样大，此处为0 (There is a problem, assuming all data are the same size, here is 0)
 	nbins_x = (int)ceil(xdelta/distance_tolerance);
 	nbins_y = (int)ceil(ydelta/distance_tolerance);
 	if(nbins_x <= 0 )
 	{
-		nbins_x = 1;//至少保留1个bin
+		nbins_x = 1;//至少保留1个bin (Keep at least 1 bin)
 		//error("generateCircleCandidates,nbins_x,nbins_y error");
 	}
 	if(nbins_y <= 0)
@@ -2945,18 +3020,18 @@ int  cluster2DPoints( double * points, int points_num, double distance_tolerance
 		nbins_y = 1;
 	}
 	point2d1i * center_bins;
-	center_bins = (point2d1i *)calloc(nbins_y*nbins_x, sizeof(point2d1i));//(x,y,z),x用来记sum(xi),y用来记sum(yi),z用来记落在格子里的数量
+	center_bins = (point2d1i *)calloc(nbins_y*nbins_x, sizeof(point2d1i));//(x,y,z),x用来记sum(xi),y用来记sum(yi),z用来记落在格子里的数量 ((x, y, z), x is used to record sum(xi), y is used to record sum(yi), and z is used to record the number falling in the grid)
 	memset(center_bins,0,sizeof(point2d1i)*nbins_y*nbins_x);
 	if(center_bins == NULL)
 		error("cluster2DPoints, not enough memory");
-//	cout<<"2D原始数据:"<<points_num<<endl;
-	for ( i = 0; i< points_num; i++ )//将圆心记录到格子里面，同时落在相应格子里面的数量++
+//	cout<<"2D原始数据:"<<points_num<<endl; (cout<<"2D raw data:"<<points_num<<endl;)
+	for ( i = 0; i< points_num; i++ )//将圆心记录到格子里面，同时落在相应格子里面的数量++ (Record the center of the circle in the grid, and the number that falls in the corresponding grid at the same time++)
 	{
 		addr = 2*i;
 
 //		cout<<points[addr]<<'\t'<<points[addr+1]<<endl;
 
-		x = (int)((points[addr]   - xmin)/xdelta*nbins_x+0.5);//四舍五入
+		x = (int)((points[addr]   - xmin)/xdelta*nbins_x+0.5);//四舍五入 (rounding)
 		y = (int)((points[addr+1] - ymin)/ydelta*nbins_y+0.5);
 		if( x >= nbins_x)
 			x = nbins_x-1;
@@ -2968,7 +3043,7 @@ int  cluster2DPoints( double * points, int points_num, double distance_tolerance
 		center_bins[addr2].z ++;
 	}
 	int initCentersLength = 0;
-	for ( y = 0; y<nbins_y; y++)//将vote后非0的格子里面的point取均值，并按照顺序重写到center_bins里面，无内存消耗
+	for ( y = 0; y<nbins_y; y++)//将vote后非0的格子里面的point取均值，并按照顺序重写到center_bins里面，无内存消耗 (Take the average of the points in the non-zero grids after the vote, and rewrite them into center_bins in order, without memory consumption)
 		for ( x = 0; x<nbins_x; x++)
 		{
 			addr = y*nbins_x+x;
@@ -2990,37 +3065,41 @@ int  cluster2DPoints( double * points, int points_num, double distance_tolerance
 	}
 	double * initCenters; //initCentersLength x 2
 	initCenters = (double*)malloc(sizeof(double)*initCentersLength*2); 
-	//将记录在链表里面的分区后的圆心均值记录到数组里，便于作为初始点进行均值漂移
-	for ( i = 0; i<initCentersLength; i++ )// initCenters 大小是 initCentersLength*2
+	//将记录在链表里面的分区后的圆心均值记录到数组里，便于作为初始点进行均值漂移 
+	// (Record the mean value of the center of the circle after the partition recorded in the linked list into the array, 
+	// which is convenient for the mean shift as the initial point)
+	for ( i = 0; i<initCentersLength; i++ )// initCenters 大小是 initCentersLength*2 (initCenters size is initCentersLength*2)
 	{
 		int addr = 2*i;
 		initCenters[addr]   = center_bins[i].x;
 		initCenters[addr+1] = center_bins[i].y;
 	}
-	free((void*)center_bins);//赶紧释放该内存
+	free((void*)center_bins);//赶紧释放该内存 (Free this memory now)
 
-//	cout<<"2D均值漂移前初始迭代点："<<endl;
+//	cout<<"2D均值漂移前初始迭代点："<<endl; (cout<<"Initial iteration point before 2D mean shift:"<<endl;)
 //	for (int  i = 0; i<initCentersLength; i++)
 //		cout<<initCenters[2*i]<<'\t'<<initCenters[2*i+1]<<endl;
 	
 	//均值漂移的结果会更新到initCenters里面
-	meanShift(points,points_num,2,initCenters,initCentersLength,1,distance_tolerance,1e-6,50);//迭代20次
+	// (The result of the mean shift will be updated to initCenters)
+	meanShift(points,points_num,2,initCenters,initCentersLength,1,distance_tolerance,1e-6,50);//迭代20次 (Iterate 20 times)
 
-//	cout<<"2D均值漂移后的聚类中心:"<<endl;
+//	cout<<"2D均值漂移后的聚类中心:"<<endl; (cout<<"Cluster center after 2D mean shift:"<<endl;)
 //	for (int  i = 0; i<initCentersLength; i++)
 //		cout<<initCenters[2*i]<<'\t'<<initCenters[2*i+1]<<endl;
 
-	//聚类
+	//聚类 (clustering)
 	//千万要注意centers_num是int型指针，++--时要(*centers_num).
-	clusterByDistance(initCenters,initCentersLength,2,distance_tolerance/2,40,centers, centers_num);//此处控制参数要改，要调节
+	// (Be sure to note that centers_num is an int pointer, and ++-- requires (*centers_num).)
+	clusterByDistance(initCenters,initCentersLength,2,distance_tolerance/2,40,centers, centers_num);//此处控制参数要改，要调节 (Here the control parameters need to be changed and adjusted)
 
-//	cout<<"2D距离聚类，去除重复点后的点集:"<<endl;
+//	cout<<"2D距离聚类，去除重复点后的点集:"<<endl; (cout<<"2D distance clustering, point set after removing duplicate points:"<<endl;)
 //	for (int  i = 0; i<(*centers_num); i++)
 //		cout<<centers[2*i]<<'\t'<<centers[2*i+1]<<endl;
 
-	if((*centers_num) <= 0)//可无
+	if((*centers_num) <= 0)//可无 (optional)
 	{
-		return 0;  //不懂为什么，聚类中心的周围确没有最靠近它的点
+		return 0;  //不懂为什么，聚类中心的周围确没有最靠近它的点 (I don't know why, there is no point closest to it around the cluster center)
 		//system("pause");
 		//error("cluster2DPoints,(*centers_num)<=0");
 	}
@@ -3030,15 +3109,22 @@ int  cluster2DPoints( double * points, int points_num, double distance_tolerance
 }
 
 //聚类算法，均值漂移
+// (Clustering Algorithms, Mean Shift)
 //三个步骤，一是选取初始迭代点，二是均值漂移，三是去除重复点，从而得到聚类中心
+// (There are three steps, one is to select the initial iteration point, the other is to shift the mean value,
+// and the third is to remove duplicate points to obtain the cluster center)
 //获得候选圆心的聚类中心(xi,yi)
-//输入：
-//datas，一维点数据,长度为datas_num x 1
-//distance_tolerance,数据点聚类的半径
-//输出：
+// (Get the cluster center (xi,yi) of the candidate circle center)
+//输入：(enter)
+//datas，一维点数据,长度为datas_num x 1 (datas, one-dimensional point data, the length is datas_num x 1)
+//distance_tolerance,数据点聚类的半径 (distance_tolerance, the radius of the clustering of data points)
+//输出：(outputs)
 //一维数据点的聚类中心 centers是一维double数组， 大小为 centers_num x 1
-//正确返回值为1，出现错误为0. 例如points为空
+// (Cluster centers of 1D data points centers is a 1D double array of size centers_num x 1)
+//正确返回值为1，出现错误为0. 例如points为空 (The correct return value is 1, and the error is 0. For example, points is empty)
 //切记切记！！！ centers为函数内部申请的内存，用来返回centers_num个点的聚类中心，使用完后一定要释放，记住free(centers)！！！
+// (Remember remember! ! ! The centers is the memory applied by the function, which is used to return the cluster centers of centers_num points. 
+// It must be released after use. Remember free(centers)! ! !)
 int  cluster1DDatas( double * datas, int datas_num, double distance_tolerance, double * & centers, int * centers_num)
 {
 	double rmin,rmax,rdelta;
@@ -3046,25 +3132,25 @@ int  cluster1DDatas( double * datas, int datas_num, double distance_tolerance, d
 	int i;
 	rmin = DBL_MAX;
 	rmax = 0;
-	for( i  = 0; i < datas_num; i++)//将链表里的r集合复制到数组
+	for( i  = 0; i < datas_num; i++)//将链表里的r集合复制到数组 (Copy the r collection in the linked list to the array)
 	{
-		if(datas[i] < rmin)//在这一次遍历中，记录最大最小值
+		if(datas[i] < rmin)//在这一次遍历中，记录最大最小值 (In this traversal, record the maximum and minimum values)
 			rmin = datas[i];
 		if(datas[i] > rmax)
 			rmax = datas[i];
 	}
 	int nbins_r = 0;
 	point1d1i * center_bins;
-	rmax += rmin*0.02;//避免rmax-rmin = 0
+	rmax += rmin*0.02;//避免rmax-rmin = 0 (Avoid rmax-rmin=0)
 	rmin -= rmin*0.02;
 	rdelta = rmax - rmin;
 	nbins_r = (int)ceil((rdelta)/distance_tolerance);
-	if(nbins_r <= 0)//至少有一个bin
+	if(nbins_r <= 0)//至少有一个bin (at least one bin)
 		nbins_r = 1;
 	center_bins = (point1d1i *)malloc(sizeof(point1d1i)*nbins_r);
-	memset(center_bins,0,sizeof(point1d1i)*nbins_r);//初始化为0
-//	cout<<"1D原始数据:"<<datas_num<<endl;
-	for( i = 0; i<datas_num; i++)//对分区vote
+	memset(center_bins,0,sizeof(point1d1i)*nbins_r);//初始化为0 (initialized to 0)
+//	cout<<"1D原始数据:"<<datas_num<<endl; (cout<<"1D raw data:"<<datas_num<<endl;)
+	for( i = 0; i<datas_num; i++)//对分区vote (vote on partition)
 	{
 //		cout<<datas[i]<<endl;
 		r = int((datas[i]-rmin)/rdelta*nbins_r+0.5);
@@ -3076,6 +3162,7 @@ int  cluster1DDatas( double * datas, int datas_num, double distance_tolerance, d
 	int init_r_length = 0;
 	for( i = 0; i<nbins_r; i++)
 	{
+		// (Count non-zero partitions, and take the mean value of each bin, rewrite them to center_bins in order, without memory consumption)
 		if(center_bins[i].cnt > 0)//统计非0分区,并且对每一个bin取均值，按照顺序重写到center_bins里面，无内存消耗
 		{
 			center_bins[init_r_length].data = center_bins[i].data/center_bins[i].cnt;
@@ -3094,47 +3181,52 @@ int  cluster1DDatas( double * datas, int datas_num, double distance_tolerance, d
 	double * initCenters; //init_r_length x 1
 	initCenters = (double*)malloc(sizeof(double)*init_r_length); 
 	//将记录在链表里面的分区后的圆心均值记录到数组里，便于作为初始点进行均值漂移
-	for ( i = 0; i<init_r_length; i++ )// initCenters 大小是 init_r_length x 1
+	// Record the mean value of the center of the circle after the partition recorded in the linked list into the array, 
+	// which is convenient for the mean shift as the initial point
+	for ( i = 0; i<init_r_length; i++ )// initCenters 大小是 init_r_length x 1 (initCenters size is init_r_length x 1)
 	{
 		initCenters[i] = center_bins[i].data;
 	}
-	free(center_bins);//赶紧释放该内存
+	free(center_bins);//赶紧释放该内存 (Free this memory now)
 
-//	cout<<"1D均值漂移前初始迭代点："<<endl;
+//	cout<<"1D均值漂移前初始迭代点："<<endl; (cout<<"Initial iteration point before 1D mean shift:"<<endl;)
 //	for (int  i = 0; i<init_r_length; i++)
 //		cout<<initCenters[i]<<'\t';
 //	cout<<endl;
 
 	//至此，得到了均值漂移初始的initCenters，为一维double数组，长度是init_r_length
-	meanShift(datas, datas_num, 1, initCenters, init_r_length, 1, distance_tolerance, 1e-6, 20);//迭代20次
+	// So far, the initial initCenters of the mean shift has been obtained, which is a one-dimensional double array with a length of init_r_length
+	meanShift(datas, datas_num, 1, initCenters, init_r_length, 1, distance_tolerance, 1e-6, 20);//迭代20次 (Iterate 20 times)
 
-//	cout<<"1D均值漂移后的聚类中心:"<<endl;
+//	cout<<"1D均值漂移后的聚类中心:"<<endl; (cout<<"Cluster center after 1D mean shift:"<<endl;)
 //	for (int  i = 0; i<init_r_length; i++)
 //		cout<<initCenters[i]<<'\t';
 //	cout<<endl;
 
-	//聚类
+	//聚类 (clustering)
 	//千万要注意centers_num是int型指针，++--时要(*centers_num).
-	clusterByDistance(initCenters, init_r_length, 1, distance_tolerance/2, 40, centers, centers_num);//控制参数40，最多40个点合成1个点
+	// (Be sure to note that centers_num is an int pointer, and ++-- requires (*centers_num).)
+	clusterByDistance(initCenters, init_r_length, 1, distance_tolerance/2, 40, centers, centers_num);//控制参数40，最多40个点合成1个点 (Control parameter 40, up to 40 points can be combined into 1 point)
 	
-//	cout<<"1D距离聚类，去除重复点后的点集:"<<endl;
+//	cout<<"1D距离聚类，去除重复点后的点集:"<<endl; (cout<<"1D distance clustering, point set after removing duplicate points:"<<endl;)
 //	for (int  i = 0; i<(*centers_num); i++)
 //		cout<<centers[i]<<'\t';
 //	cout<<endl;
 
 	if((*centers_num) <= 0)//可无
 	{
-		return 0;  //不懂为什么，聚类中心的周围确没有最靠近它的点
+		return 0;  //不懂为什么，聚类中心的周围确没有最靠近它的点 (I don't know why, there is no point closest to it around the cluster center)
 		//system("pause");
 		//error("cluster1DDatas,(*centers_num)<=0");
 	}
     free(initCenters);
-//	cout<<"1D聚类后数量::"<<(*centers_num)<<endl;
+//	cout<<"1D聚类后数量::"<<(*centers_num)<<endl; (cout<<"Number after 1D clustering::"<<(*centers_num)<<endl;)
 	return 1;
 }
 
 //================================Generate Ellipse Candidates=========================================
 //匹配组对，组对的索引参数，椭圆参数
+// (match group pair, index parameter of group pair, ellipse parameter)
 typedef struct PairGroup_s
 {
 	point2i pairGroupInd;
@@ -3143,7 +3235,7 @@ typedef struct PairGroup_s
 	double  phi;     //angle of orientation  
 }PairGroup;
 
-//匹配组对节点
+//匹配组对节点 (Match group pair nodes)
 typedef struct PairGroupNode_s
 {
 	point2i pairGroupInd;
@@ -3208,7 +3300,9 @@ void freePairGroupList( PairGroupList * list)
 }
 
 //计算梯度，返回模和角度，同时模值太小的像素点直接抑制掉，赋值为NOTDEF
+// (Calculate the gradient, return the modulus and angle, and directly suppress the pixels whose modulus value is too small, and assign the value to NOTDEF)
 //mod、angles为了传值，是二级指针
+// (mod and angles are secondary pointers in order to pass values)
 void calculateGradient( double * img_in, unsigned int imgx, unsigned int imgy,image_double * mod, image_double * angles)
 {
 	if(img_in == NULL || imgx == 0 || imgy == 0)
@@ -3223,7 +3317,7 @@ void calculateGradient( double * img_in, unsigned int imgx, unsigned int imgy,im
 	double sum = 0;
 
 	//double max_grad = 0.0;
-	//边界初始为NOTDEF
+	//边界初始为NOTDEF (Boundary is initially NOTDEF)
 	for ( x = 0; x<imgx; x++) 
 	{
 		//(*angles)->data[x]=NOTDEF;
@@ -3292,7 +3386,7 @@ void calculateGradient2( double * img_in, unsigned int imgx, unsigned int imgy, 
 	double sum = 0;
 	double value;  
 	//double max_grad = 0.0;
-	//边界初始为NOTDEF
+	//边界初始为NOTDEF (Boundary is initially NOTDEF)
 	for ( x = 0; x<imgx; x++) 
 	{
 		(*angles)->data[x]=NOTDEF;
@@ -3338,7 +3432,7 @@ void calculateGradient2( double * img_in, unsigned int imgx, unsigned int imgy, 
 		   /* gradient angle computation */
 	     (*angles)->data[adr] = atan2(gy,gx);
 		}
-	threshold = 2*sqrt(sum/(imgx*imgy));//自动阈值
+	threshold = 2*sqrt(sum/(imgx*imgy));//自动阈值 (automatic threshold)
 	//non maximum suppression
 	for(x=1;x<imgx-1;x++)
 		for(y=1;y<imgy-1;y++)
@@ -3371,7 +3465,7 @@ void calculateGradient2( double * img_in, unsigned int imgx, unsigned int imgy, 
 					(*angles)->data[adr] = NOTDEF;
 			}
 		}
-    //也标记到mod图上面
+    //也标记到mod图上面 (Also marked on the mod map)
 	//for(x=1;x<imgx-1;x++)
 	//	for(y=1;y<imgy-1;y++)
 	//	{
@@ -3382,7 +3476,7 @@ void calculateGradient2( double * img_in, unsigned int imgx, unsigned int imgy, 
 }
 
 //=============================================================================
-//需要包含如下头文件
+//需要包含如下头文件 (Need to include the following header files)
 //#include <opencv2\opencv.hpp>
 //using namespace cv;
 void cvCanny3(	const void* srcarr, void* dstarr,
@@ -3823,16 +3917,16 @@ int ellipse2Param(double *p,double param[])
 	  Rv = sqrt(Rv);
       param[0]=uCentre;param[1]=vCentre;
       param[2]=Ru;param[3]=Rv;param[4]=thetarad;
-	  //会出现Ru < Rv情况，对调一下
+	  //会出现Ru < Rv情况，对调一下 (There will be Ru < Rv situation, swap it)
 	  if(Ru < Rv )
 	  {
 		  param[2] = Rv;
 		  param[3] = Ru;
-		  if(thetarad < 0)//调换长短轴，使得第三个参数为长轴，第四个为短轴
+		  if(thetarad < 0)//调换长短轴，使得第三个参数为长轴，第四个为短轴 (Swap the long and short axes so that the third parameter is the long axis and the fourth is the short axis)
 			  param[4] += M_1_2_PI;
 		  else
 			  param[4] -= M_1_2_PI;
-		  if(thetarad < - M_1_2_PI)//长轴倾角限定在-pi/2 ~ pi/2，具备唯一性
+		  if(thetarad < - M_1_2_PI)//长轴倾角限定在-pi/2 ~ pi/2，具备唯一性 (The long-axis inclination is limited to -pi/2 ~ pi/2, which is unique)
 			  param[4] += M_PI;
 		  if(thetarad > M_1_2_PI)
 			  param[4] -= M_PI;
@@ -3841,7 +3935,7 @@ int ellipse2Param(double *p,double param[])
   return 1;
 }
 //input : (xi,yi)
-//output: x0,y0,a,b,phi,ellipara需要事先申请内存
+//output: x0,y0,a,b,phi,ellipara需要事先申请内存 (x0,y0,a,b,phi,ellipara need to apply for memory in advance)
 //successfull, return 1; else return 0
 int fitEllipse(point2d* dataxy, int datanum, double* ellipara)
 {
@@ -3867,8 +3961,8 @@ int fitEllipse(point2d* dataxy, int datanum, double* ellipara)
 			for ( int k = 0; k<datanum; k++)
 				S[i*6+j] += D[k*6+i]*D[k*6+j];
 		}
-	free(D);//释放内存
-	//对称矩阵赋值
+	free(D);//释放内存 (free memory)
+	//对称矩阵赋值 (Symmetric Matrix Assignment)
 	for ( int i = 0; i<6; i++)
 		for ( int j = 0; j<i; j++)
 			S[i*6+j]=S[j*6+i];
@@ -3877,7 +3971,7 @@ int fitEllipse(point2d* dataxy, int datanum, double* ellipara)
 	C[2*6+0] = 2;
 	// eig(S,C) eig(inv(S)*C)
 	double alphar[6],alphai[6],beta[6];
-	double vl[36] = {0};//此处不用
+	double vl[36] = {0};//此处不用 (not used here)
 	double vr[36] = {0};
 	char JOBVL = 'N';
 	char JOBVR = 'V';
@@ -3887,26 +3981,27 @@ int fitEllipse(point2d* dataxy, int datanum, double* ellipara)
 	ptrdiff_t info;
 	//info = LAPACKE_dggev(LAPACK_ROW_MAJOR,'N','V',6,S,6,C,6,alphar,alphai,beta,vl,6,vr,6);
 	//注意S为对称矩阵，故转置后等于本身，变成列优先，S可以不变
+	//(Note that S is a symmetric matrix, so it is equal to itself after transposition, becoming column priority, and S can be unchanged)
 	dggev(&JOBVL,&JOBVR,&fitN,S,&fitN,C,&fitN,alphar,alphai,beta,vl,&fitN,vr,&fitN,fitWork,&workLen,&info);
 	if(info == 0)
 	{
 		int index = -1;
 		for ( int i = 0; i<6; i++)
 			if( (alphar[i]>=-(2.2204460492503131e-014)) && (alphai[i] == 0) && (beta[i] != 0)) // 100*DBL_EPSILON, eigenvalue = (alphar + i*alphai)/beta
-				index = i;//vr[:,i],vr第i列对应的特征向量则为拟合参数
-		if(index == -1)//再试一次，放宽对实部>0的约束，放宽到>-0.005
+				index = i;//vr[:,i],vr第i列对应的特征向量则为拟合参数 (vr[:,i], the eigenvector corresponding to the i-th column of vr is the fitting parameter)
+		if(index == -1)//再试一次，放宽对实部>0的约束，放宽到>-0.005 (try again, relax the constraint on the real part > 0 to >-0.005)
 		{
-			double temp = -0.005;//这个参数很关键
+			double temp = -0.005;//这个参数很关键 (//This parameter is critical)
 			for ( int i = 0; i<6; i++)
 			if( (alphar[i]>=temp) && (alphai[i] == 0) && (beta[i] != 0)) // 100*DBL_EPSILON, eigenvalue = (alphar + i*alphai)/beta
 			{
 				temp = alphar[i];
-				index = i;//vr[:,i],vr第i列对应的特征向量则为拟合参数
+				index = i;//vr[:,i],vr第i列对应的特征向量则为拟合参数 (vr[:,i], the eigenvector corresponding to the i-th column of vr is the fitting parameter)
 			}
 		}
 		if(index != -1)
 		{
-			//此处借用beta来传递参数
+			//此处借用beta来传递参数 (Borrow beta to pass parameters here)
 		    //beta[0] = vr[6*0+index];
 		    //beta[1] = vr[6*1+index];
 		    //beta[2] = vr[6*2+index];
@@ -3926,8 +4021,8 @@ int fitEllipse(point2d* dataxy, int datanum, double* ellipara)
 	return 0;
 }
 
-//input: dataxy为数据点(xi,yi),总共有datanum个
-//output: 拟合矩阵S. 注意：S需要事先申请内存，double S[36].
+//input: dataxy为数据点(xi,yi),总共有datanum个 (dataxy is the data point (xi,yi), there are a total of datanum)
+//output: 拟合矩阵S. 注意：S需要事先申请内存，double S[36]. (Fitting matrix S. Note: S needs to apply for memory in advance, double S[36].)
 inline void calcuFitMatrix(point2d* dataxy, int datanum, double * S)
 {
 	double* D = (double*)malloc(datanum*6*sizeof(double));
@@ -3950,15 +4045,15 @@ inline void calcuFitMatrix(point2d* dataxy, int datanum, double * S)
 				S[i*6+j] += D[k*6+i]*D[k*6+j];
 		}
 	}
-    free(D);//释放内存
-	//对称矩阵赋值
+    free(D);//释放内存 (free memory)
+	//对称矩阵赋值 (Symmetric Matrix Assignment)
 	for ( int i = 0; i<6; i++)
 		for ( int j = 0; j<i; j++)
 			S[i*6+j]=S[j*6+i];
 }
 //input: fit matrixes S1,S2. length is 36.
 //output: fit matrix S_out. S_out = S1 + S2.
-//S_out事先需要申请内存
+//S_out事先需要申请内存 (S_out needs to apply for memory in advance)
 inline void addFitMatrix(double * S1, double * S2, double * S_out)
 {
 	int ind;
@@ -3968,13 +4063,14 @@ inline void addFitMatrix(double * S1, double * S2, double * S_out)
 			ind = i*6+j;
 			S_out[ind] = S1[ind]+S2[ind];
 		}
-	//对称矩阵赋值
+	//对称矩阵赋值 (Symmetric Matrix Assignment)
 	for ( int i = 0; i<6; i++)
 		for ( int j = 0; j<i; j++)
 			S_out[i*6+j]=S_out[j*6+i];
 }
 //input : S矩阵，6 x 6 = 36
-//output: (A,B,C,D,E,F)且A>0, ellicoeff需要事先申请内存. 当要转换成(x0,y0,a,b,phi)时，则要用
+//output: (A,B,C,D,E,F)且A>0, ellicoeff需要事先申请内存. 当要转换成(x0,y0,a,b,phi)
+//		  ((A,B,C,D,E,F) and A>0, ellicoeff needs to apply for memory in advance. When converting to (x0,y0,a,b,phi))
 //ellipse2Param(ellicoeff,ellipara); ax^2 + bxy + cy^2 + dx + ey + f = 0, transform to (x0,y0,a,b,phi)
 //successfull, return 1; else return 0
 int fitEllipse2(double * S, double* ellicoeff)
@@ -3987,7 +4083,7 @@ int fitEllipse2(double * S, double* ellicoeff)
 	C[2*6+0] = 2;
 	// eig(S,C) eig(inv(S)*C)
 	double alphar[6],alphai[6],beta[6];
-	double vl[36] = {0};//此处不用
+	double vl[36] = {0};//此处不用 (not used here)
 	double vr[36] = {0};
 	char JOBVL = 'N';
 	char JOBVR = 'V';
@@ -4002,21 +4098,21 @@ int fitEllipse2(double * S, double* ellicoeff)
 		int index = -1;
 		for ( int i = 0; i<6; i++)
 			if( (alphar[i]>=-(2.2204460492503131e-014)) && (alphai[i] == 0) && (beta[i] != 0)) // 100*DBL_EPSILON, eigenvalue = (alphar + i*alphai)/beta
-				index = i;//vr[:,i],vr第i列对应的特征向量则为拟合参数
-		if(index == -1)//再试一次，放宽对实部>0的约束，放宽到>-0.005
+				index = i;//vr[:,i],vr第i列对应的特征向量则为拟合参数 (vr[:,i], the eigenvector corresponding to the i-th column of vr is the fitting parameter)
+		if(index == -1)//再试一次，放宽对实部>0的约束，放宽到>-0.005 (try again, relax the constraint on the real part > 0 to >-0.005)
 		{
 			double temp = -0.005;//这个参数很关键
 			for ( int i = 0; i<6; i++)
 			if( (alphar[i]>=temp) && (alphai[i] == 0) && (beta[i] != 0)) // 100*DBL_EPSILON, eigenvalue = (alphar + i*alphai)/beta
 			{
 				temp = alphar[i];
-				index = i;//vr[:,i],vr第i列对应的特征向量则为拟合参数
+				index = i;//vr[:,i],vr第i列对应的特征向量则为拟合参数 (vr[:,i], the eigenvector corresponding to the i-th column of vr is the fitting parameter)
 			}
 		}
 		if(index != -1)
 		{
-			//此处借用beta来传递参数
-	        if(vr[6*index+0] < 0)//注意列优先
+			//此处借用beta来传递参数 (Borrow beta to pass parameters here)
+	        if(vr[6*index+0] < 0)//注意列优先 (Pay attention to column first)
 			{
 				ellicoeff[0] = -vr[6*index+0]; //-vr[6*0+index];
 				ellicoeff[1] = -vr[6*index+1]; //-vr[6*1+index];
@@ -4040,8 +4136,8 @@ int fitEllipse2(double * S, double* ellicoeff)
 	return 0;
 }
 
-//入参：e1 = (x1,y1,a1,b1,phi1), e2 = (x2,y2,a2,b2,phi2)
-//输出：相等为1，否则为0
+//入参：e1 = (x1,y1,a1,b1,phi1), e2 = (x2,y2,a2,b2,phi2) (Input parameters: e1 = (x1,y1,a1,b1,phi1), e2 = (x2,y2,a2,b2,phi2))
+//输出：相等为1，否则为0 (Output: 1 if equal, 0 otherwise)
 inline bool isEllipseEqual(double * ellipse1, double * ellipse2, double centers_distance_threshold, double semimajor_errorratio, double semiminor_errorratio, double angle_errorratio, double iscircle_ratio)
 {
 	bool con1 = ( abs(ellipse1[0] - ellipse2[0]) < centers_distance_threshold && abs(ellipse1[1] - ellipse2[1]) < centers_distance_threshold &&
@@ -4056,8 +4152,8 @@ inline bool regionLimitation( point2d point_g1s, point2d g1s_ls_dir, point2d poi
 {
 	point2d g1m_ls_dir, g2m_ls_dir;
 	point2d g1s_arc_dir,g1e_arc_dir,g1m_arc_dir,g2s_arc_dir,g2e_arc_dir,g2m_arc_dir;
-	point2d test_vec1,test_vec2,test_vec3; //弧指向圆心的向量和测试向量
-	//组的pend<-pstart构成的向量为gim_arc_dir
+	point2d test_vec1,test_vec2,test_vec3; //弧指向圆心的向量和测试向量 (The vector of the arc pointing to the center of the circle and the test vector)
+	//组的pend<-pstart构成的向量为gim_arc_dir (The vector composed of pend<-pstart of the group is gim_arc_dir)
 	double xdelta, ydelta, theta;
 	xdelta = point_g1e.x - point_g1s.x;
 	ydelta = point_g1e.y - point_g1s.y;
@@ -4210,20 +4306,26 @@ inline double d_rosin (double *param, double x, double y)
 }
 /*----------------------------------------------------------------------------*/
 
-//输入
+//输入 (enter)
 //lsd算法检测得到的线段集合lines的数量line_num，return的返回值是line_nums条线段，为一维double型数组lines，长度为8*n，每8个为一组
-//存着x1,y1,x2,y2,dx,dy,length,polarity
+// (The number line_num of the line segment set lines detected by the lsd algorithm, the return value of return is line_nums 
+// line segments, which is a one-dimensional double-type array lines, with a length of 8*n, and each 8 is a group)
+//存着x1,y1,x2,y2,dx,dy,length,polarity (Store x1,y1,x2,y2,dx,dy,length,polarity)
 //groups: 线段分组，每个组存按照几何分布顺序顺时针或者逆时针存储着线段索引，线段索引范围是0~line_num-1. 这里由于是指针，使用时要注意(*group)
+// (groups: Line segments are grouped. Each group stores the line segment index clockwise or counterclockwise according to 
+// the geometric distribution order. The range of the line segment index is 0~line_num-1. Since it is a pointer, pay attention when using it (*group))
 //first_group_ind、second_group_ind是匹配组队的索引，当提取salient hypothesis时，second_group_ind = -1, fit_matrix2 = NULL.
-//fit_matrix1, fit_matrix2, 分别是组队的对应的拟合矩阵
-//angles, 是边缘点图+梯度方向。 无边缘点时是NODEF
+// (first_group_ind, second_group_ind are the indices of matching teams, when extracting the salient hypothesis, second_group_ind = -1, fit_matrix2 = NULL.)
+//fit_matrix1, fit_matrix2, 分别是组队的对应的拟合矩阵 (are the corresponding fitting matrices of the team, respectively)
+//angles, 是边缘点图+梯度方向。 无边缘点时是NODEF (is the edge point map + gradient direction. NODEF when there are no edge points)
 //distance_tolerance:
 //group_inliers_num:记录着各个组的支持内点数量的数组，实时更新，初始时为0
-//输出
+// (group_inliers_num: An array that records the number of inliers supported by each group, updated in real time, initially 0)
+//输出 (output)
 //ellipara
 bool calcEllipseParametersAndValidate( double * lines, int line_num, vector<vector<int>> * groups, int first_group_ind,int second_group_ind, double * fit_matrix1, double * fit_matrix2, image_double angles, double distance_tolerance, unsigned int * group_inliers_num, point5d *ellipara)
 {
-	double S[36]; //拟合矩阵S
+	double S[36]; //拟合矩阵S (fit matrix S)
 	double Coefficients[6] = {0,0,0,0,0,0};// ax^2 + bxy + cy^2 + dx + ey + f = 0 
 	double param[5], param2[5];
 	int info,addr;
@@ -4235,17 +4337,17 @@ bool calcEllipseParametersAndValidate( double * lines, int line_num, vector<vect
 	vector<point2i> first_group_inliers, second_group_inliers;
 	point2i pixel_temp;
 	double semimajor_errorratio,semiminor_errorratio,iscircle_ratio;
-	if( fit_matrix2 == NULL || second_group_ind == -1)//只对一个覆盖度较大的组进行拟合
+	if( fit_matrix2 == NULL || second_group_ind == -1)//只对一个覆盖度较大的组进行拟合 (Fit only one group with greater coverage)
 	{
 		for ( int i  = 0; i < 36; i++)
 			S[i] = fit_matrix1[i];
 	}
 	else
 	{
-		addFitMatrix(fit_matrix1,fit_matrix2,S);//对组对进行拟合， S = fit_matrix1 + fit_matrix2
+		addFitMatrix(fit_matrix1,fit_matrix2,S);//对组对进行拟合， S = fit_matrix1 + fit_matrix2 (Fitting pairs of groups)
 	}
 	info = fitEllipse2(S, Coefficients);// ax^2 + bxy + cy^2 + dx + ey + f = 0, a > 0
-	if ( info == 0 )//拟合失败
+	if ( info == 0 )//拟合失败 (Fit failed)
 	{
 		ellipara = NULL;
 		return FALSE;
@@ -4259,9 +4361,10 @@ bool calcEllipseParametersAndValidate( double * lines, int line_num, vector<vect
 	//if ( first_group_ind == 2 && second_group_ind == 8)
 	//drawEllipse(img,param);
 	//组队中的 first group先进行内点准则验证，并且更新组的支持内点数量
+	// (The first group in the team is verified by the interior point criterion first, and the number of supported interior points of the group is updated)
 	for ( unsigned int i = 0; i<(*groups)[first_group_ind].size(); i++)
 	{
-		addr = (*groups)[first_group_ind][i] * 8; //第first_group_ind分组的第i条线段索引*8
+		addr = (*groups)[first_group_ind][i] * 8; //第first_group_ind分组的第i条线段索引*8 (The i-th line segment index of the first_group_ind grouping*8)
 		rec.x1 = lines[addr];
 		rec.y1 = lines[addr+1];
 		rec.x2 = lines[addr+2];
@@ -4271,53 +4374,53 @@ bool calcEllipseParametersAndValidate( double * lines, int line_num, vector<vect
 		rec.dx = lines[addr+4];
 		rec.dy = lines[addr+5];
 		rec.width = 3*distance_tolerance;
-		//line_length[i] = (int)lines[addr+6];//记录线段长度到数组line_length[i]
-		rec_support_cnt = rec_inliers_cnt = 0;//清零很重要
-		if ( lines[addr+7] == 1) //极性一致
+		//line_length[i] = (int)lines[addr+6];//记录线段长度到数组line_length[i] (Record the length of the line segment to the array line_length[i])
+		rec_support_cnt = rec_inliers_cnt = 0;//清零很重要 (clearing is important)
+		if ( lines[addr+7] == 1) //极性一致 (same polarity)
 		{
-			for(iter = ri_ini(&rec);!ri_end(iter);ri_inc(iter))//线段1
+			for(iter = ri_ini(&rec);!ri_end(iter);ri_inc(iter))//线段1 (line segment 1)
 			{
-				//外接矩形可能会越界
+				//外接矩形可能会越界 (The bounding rectangle may be out of bounds)
 				if(iter->x >= 0 && iter->y >= 0 && iter->x < angles->xsize && iter->y < angles->ysize)
 				{
-					temp  = angles->data[iter->y*angles->xsize+iter->x] ;//内点的梯度方向
+					temp  = angles->data[iter->y*angles->xsize+iter->x] ;//内点的梯度方向 (Gradient direction of interior points)
 					if(temp!= NOTDEF )
 					{
 						//test point's normal is (ax0+by0/2+d/2, cy0+bx0/2+e/2)
 						point_normalx = Coefficients[0]*iter->x + (Coefficients[1]*iter->y + Coefficients[3])/2;
 						point_normaly = Coefficients[2]*iter->y + (Coefficients[1]*iter->x + Coefficients[4])/2;
-						point_normal = atan2(-point_normaly,-point_normalx); //边缘点的法线方向,指向椭圆内侧
+						point_normal = atan2(-point_normaly,-point_normalx); //边缘点的法线方向,指向椭圆内侧 (The normal direction of the edge point, pointing to the inside of the ellipse)
 						rec_inliers_cnt++;
 						if(angle_diff(point_normal,temp) <= M_1_8_PI ) //+- 22.5°内 且 || d - r || < 3 dis_t
 						{
 							rec_support_cnt++;
 							pixel_temp.x = iter->x; pixel_temp.y = iter->y;
-							first_group_inliers.push_back(pixel_temp);//添加该线段对应的内点
+							first_group_inliers.push_back(pixel_temp);//添加该线段对应的内点 (Add the interior point corresponding to the line segment)
 						}
 					} 
 				}
 			}
 		}
-		else//极性相反
+		else//极性相反 (opposite polarity)
 		{
-			for(iter = ri_ini(&rec);!ri_end(iter);ri_inc(iter))//线段1
+			for(iter = ri_ini(&rec);!ri_end(iter);ri_inc(iter))//线段1 (line segment 1)
 			{
-				//外接矩形可能会越界
+				//外接矩形可能会越界 (The bounding rectangle may be out of bounds)
 				if(iter->x >= 0 && iter->y >= 0 && iter->x < angles->xsize && iter->y < angles->ysize)
 				{
-					temp  = angles->data[iter->y*angles->xsize+iter->x] ;//内点的梯度方向
+					temp  = angles->data[iter->y*angles->xsize+iter->x] ;//内点的梯度方向 (Gradient direction of interior points)
 					if(temp!= NOTDEF )
 					{
 						//test point's normal is (ax0+by0/2+d/2, cy0+bx0/2+e/2)
 						point_normalx = Coefficients[0]*iter->x + (Coefficients[1]*iter->y + Coefficients[3])/2;
 						point_normaly = Coefficients[2]*iter->y + (Coefficients[1]*iter->x + Coefficients[4])/2;
-						point_normal = atan2(point_normaly,point_normalx); //边缘点的法线方向,指向椭圆外侧
+						point_normal = atan2(point_normaly,point_normalx); //边缘点的法线方向,指向椭圆外侧 (The normal direction of the edge point, pointing to the outside of the ellipse)
 						rec_inliers_cnt++;
-						if(angle_diff(point_normal,temp) <= M_1_8_PI ) //+- 22.5°内 且 || d - r || < 3 dis_t
+						if(angle_diff(point_normal,temp) <= M_1_8_PI ) //+- 22.5°内 且 || d - r || < 3 dis_t (+- within 22.5° and || d - r || < 3 dis_t)
 						{
 							rec_support_cnt++;
 							pixel_temp.x = iter->x; pixel_temp.y = iter->y;
-							first_group_inliers.push_back(pixel_temp);//添加该线段对应的内点
+							first_group_inliers.push_back(pixel_temp);//添加该线段对应的内点 (Add the interior point corresponding to the line segment)
 						}
 					} 
 				}
@@ -4326,25 +4429,26 @@ bool calcEllipseParametersAndValidate( double * lines, int line_num, vector<vect
 		if( !( rec_support_cnt > 0 && ( rec_support_cnt >= 0.8*lines[addr+6] || rec_support_cnt*1.0/rec_inliers_cnt >= 0.6) ) )
 		{
 			flag1 = FALSE; //flag1 初始化时为TRUE, 一旦组内有一条线段不满足要求，直接false, 内点准则验证不通过
+			//(flag1 is TRUE when initialized, once there is a line segment in the group that does not meet the requirements, it is directly false, and the interior point criterion verification fails)
 			break;
 		}
 	}
-	if ( flag1 == TRUE && first_group_inliers.size() >= 0.8*group_inliers_num[first_group_ind] )//靠近最大统计过的内点,通过验证
+	if ( flag1 == TRUE && first_group_inliers.size() >= 0.8*group_inliers_num[first_group_ind] )//靠近最大统计过的内点,通过验证 (Close to the largest statistical interior point, pass the verification)
 	{
-		if( first_group_inliers.size() >= group_inliers_num[first_group_ind])//更新组出现过的最大内点数
+		if( first_group_inliers.size() >= group_inliers_num[first_group_ind])//更新组出现过的最大内点数 (The maximum number of inliers the update group has ever seen)
 			group_inliers_num[first_group_ind] =  first_group_inliers.size();
 	}
 	else 
 		flag1 = FALSE;
-	//第一个组完成验证
-	if ( second_group_ind == -1 || fit_matrix2 == NULL)//只对一个覆盖度较大的组进行拟合
+	//第一个组完成验证 (The first group completes verification)
+	if ( second_group_ind == -1 || fit_matrix2 == NULL)//只对一个覆盖度较大的组进行拟合 (Fit only one group with greater coverage)
 	{
-		ellipara->x = param[0];//因为无论如何，都需要返回显著性强的椭圆
+		ellipara->x = param[0];//因为无论如何，都需要返回显著性强的椭圆 (Because in any case, it is necessary to return a highly significant ellipse)
 	    ellipara->y = param[1];
 	    ellipara->a = param[2];
 	    ellipara->b = param[3];
 	    ellipara->phi = param[4];
-		if ( flag1 == TRUE)//通过内点再次拟合，提高质量
+		if ( flag1 == TRUE)//通过内点再次拟合，提高质量 (Refit with interior points to improve quality)
 		{
 			point2d * dataxy = (point2d*)malloc(sizeof(point2d)*first_group_inliers.size());
 			for ( unsigned int i = 0; i<first_group_inliers.size(); i++)
@@ -4353,10 +4457,10 @@ bool calcEllipseParametersAndValidate( double * lines, int line_num, vector<vect
 				dataxy[i].y = first_group_inliers[i].y;
 			}
 			info = fitEllipse(dataxy,first_group_inliers.size(), param2);
-			free(dataxy); //释放内存
+			free(dataxy); //释放内存 (free memory)
 			if ( info == 1  && isEllipseEqual(param2,param,3*distance_tolerance,0.1,0.1,0.1,0.9) )
 			{
-				ellipara->x = param2[0];//更新椭圆，提高品质
+				ellipara->x = param2[0];//更新椭圆，提高品质 (Update ellipse, improve quality)
 			    ellipara->y = param2[1];
 			    ellipara->a = param2[2];
 			    ellipara->b = param2[3];
@@ -4364,14 +4468,15 @@ bool calcEllipseParametersAndValidate( double * lines, int line_num, vector<vect
 			    //drawEllipse(img,param2);
 			}
 		}
-		return TRUE;//对于只有一个组的提取椭圆，此时直接返回
+		return TRUE;//对于只有一个组的提取椭圆，此时直接返回 (For the extraction ellipse with only one group, return directly at this time)
 	}
 	//接下来，对组队中的 second group进行内点准则验证，并且更新组的支持内点数量
-	if (flag1 == FALSE)//在组队运算中，如果第一个组都无法满足内点要求，直接返回false
+	// (Next, verify the interior point criterion for the second group in the team, and update the number of supported interior points for the group)
+	if (flag1 == FALSE)//在组队运算中，如果第一个组都无法满足内点要求，直接返回false (In the team operation, if the first group cannot meet the interior point requirements, return false directly)
 		return FALSE;
 	for ( unsigned int i = 0; i<(*groups)[second_group_ind].size(); i++)
 	{
-		addr = (*groups)[second_group_ind][i] * 8; //第first_group_ind分组的第i条线段索引*8
+		addr = (*groups)[second_group_ind][i] * 8; //第first_group_ind分组的第i条线段索引*8 (The i-th line segment index of the first_group_ind grouping*8)
 		rec.x1 = lines[addr];
 		rec.y1 = lines[addr+1];
 		rec.x2 = lines[addr+2];
@@ -4381,53 +4486,53 @@ bool calcEllipseParametersAndValidate( double * lines, int line_num, vector<vect
 		rec.dx = lines[addr+4];
 		rec.dy = lines[addr+5];
 		rec.width = 3*distance_tolerance;
-		//line_length[i] = (int)lines[addr+6];//记录线段长度到数组line_length[i]
-		rec_support_cnt = rec_inliers_cnt = 0;//清零很重要
-		if ( lines[addr+7] == 1) //极性一致
+		//line_length[i] = (int)lines[addr+6];//记录线段长度到数组line_length[i] (Record the length of the line segment to the array line_length[i])
+		rec_support_cnt = rec_inliers_cnt = 0;//清零很重要 (clearing is important)
+		if ( lines[addr+7] == 1) //极性一致 (same polarity)
 		{
-			for(iter = ri_ini(&rec);!ri_end(iter);ri_inc(iter))//线段1
+			for(iter = ri_ini(&rec);!ri_end(iter);ri_inc(iter))//线段1 (线段1)
 			{
-				//外接矩形可能会越界
+				//外接矩形可能会越界 (The bounding rectangle may be out of bounds)
 				if(iter->x >= 0 && iter->y >= 0 && iter->x < angles->xsize && iter->y < angles->ysize)
 				{
-					temp  = angles->data[iter->y*angles->xsize+iter->x] ;//内点的梯度方向
+					temp  = angles->data[iter->y*angles->xsize+iter->x] ;//内点的梯度方向 (Gradient direction of interior points)
 					if(temp!= NOTDEF )
 					{
 						//test point's normal is (ax0+by0/2+d/2, cy0+bx0/2+e/2)
 						point_normalx = Coefficients[0]*iter->x + (Coefficients[1]*iter->y + Coefficients[3])/2;
 						point_normaly = Coefficients[2]*iter->y + (Coefficients[1]*iter->x + Coefficients[4])/2;
-						point_normal = atan2(-point_normaly,-point_normalx); //边缘点的法线方向,指向椭圆内侧
+						point_normal = atan2(-point_normaly,-point_normalx); //边缘点的法线方向,指向椭圆内侧 (The normal direction of the edge point, pointing to the inside of the ellipse)
 						rec_inliers_cnt++;
-						if(angle_diff(point_normal,temp) <= M_1_8_PI ) //+- 22.5°内 且 || d - r || < 3 dis_t
+						if(angle_diff(point_normal,temp) <= M_1_8_PI ) //+- 22.5°内 且 || d - r || < 3 dis_t (+- within 22.5° and || d - r || < 3 dis_t)
 						{
 							rec_support_cnt++;
 							pixel_temp.x = iter->x; pixel_temp.y = iter->y;
-							second_group_inliers.push_back(pixel_temp);//添加该线段对应的内点
+							second_group_inliers.push_back(pixel_temp);//添加该线段对应的内点 (Add the interior point corresponding to the line segment)
 						}
 					} 
 				}
 			}
 		}
-		else//极性相反
+		else//极性相反 (opposite polarity)
 		{
-			for(iter = ri_ini(&rec);!ri_end(iter);ri_inc(iter))//线段1
+			for(iter = ri_ini(&rec);!ri_end(iter);ri_inc(iter))//线段1 (line segment 1)
 			{
-				//外接矩形可能会越界
+				//外接矩形可能会越界 (The bounding rectangle may be out of bounds)
 				if(iter->x >= 0 && iter->y >= 0 && iter->x < angles->xsize && iter->y < angles->ysize)
 				{
-					temp  = angles->data[iter->y*angles->xsize+iter->x] ;//内点的梯度方向
+					temp  = angles->data[iter->y*angles->xsize+iter->x] ;//内点的梯度方向 (Gradient direction of interior points)
 					if(temp!= NOTDEF )
 					{
 						//test point's normal is (ax0+by0/2+d/2, cy0+bx0/2+e/2)
 						point_normalx = Coefficients[0]*iter->x + (Coefficients[1]*iter->y + Coefficients[3])/2;
 						point_normaly = Coefficients[2]*iter->y + (Coefficients[1]*iter->x + Coefficients[4])/2;
-						point_normal = atan2(point_normaly,point_normalx); //边缘点的法线方向,指向椭圆外侧
+						point_normal = atan2(point_normaly,point_normalx); //边缘点的法线方向,指向椭圆外侧 (The normal direction of the edge point, pointing to the outside of the ellipse)
 						rec_inliers_cnt++;
-						if(angle_diff(point_normal,temp) <= M_1_8_PI ) //+- 22.5°内 且 || d - r || < 3 dis_t
+						if(angle_diff(point_normal,temp) <= M_1_8_PI ) //+- 22.5°内 且 || d - r || < 3 dis_t (+- within 22.5° and || d - r || < 3 dis_t)
 						{
 							rec_support_cnt++;
 							pixel_temp.x = iter->x; pixel_temp.y = iter->y;
-							second_group_inliers.push_back(pixel_temp);//添加该线段对应的内点
+							second_group_inliers.push_back(pixel_temp);//添加该线段对应的内点 (Add the interior point corresponding to the line segment)
 						}
 					} 
 				}
@@ -4436,17 +4541,18 @@ bool calcEllipseParametersAndValidate( double * lines, int line_num, vector<vect
 		if( !(rec_support_cnt > 0 && ( rec_support_cnt >= 0.8*lines[addr+6] || rec_support_cnt*1.0/rec_inliers_cnt >= 0.6) ) )
 		{
 			flag2 = FALSE; //flag1 初始化时为TRUE, 一旦组内有一条线段不满足要求，直接false, 内点准则验证不通过
+			// (flag1 is TRUE when initialized, once there is a line segment in the group that does not meet the requirements, it is directly false, and the interior point criterion verification fails)
 			break;
 		}
 	}
-	if ( flag2 == TRUE && second_group_inliers.size() >= 0.8*group_inliers_num[second_group_ind] )//靠近最大统计过的内点,通过验证
+	if ( flag2 == TRUE && second_group_inliers.size() >= 0.8*group_inliers_num[second_group_ind] )//靠近最大统计过的内点,通过验证 (Close to the largest statistical interior point, pass the verification)
 	{
-		if(second_group_inliers.size() >= group_inliers_num[second_group_ind])//更新组出现过的最大内点数
+		if(second_group_inliers.size() >= group_inliers_num[second_group_ind])//更新组出现过的最大内点数 (The maximum number of inliers the update group has ever seen)
 			group_inliers_num[second_group_ind] = second_group_inliers.size();
 	}
 	else 
 		flag2 = FALSE;
-	//第二个组完成验证
+	//第二个组完成验证 (The second group completes the verification)
 	if ( flag1 == TRUE && flag2 == TRUE)
 	{
 		point2d * dataxy = (point2d*)malloc(sizeof(point2d)*(first_group_inliers.size() + second_group_inliers.size()));
@@ -4456,15 +4562,15 @@ bool calcEllipseParametersAndValidate( double * lines, int line_num, vector<vect
 			dataxy[i].y = first_group_inliers[i].y;
 		}
 		addr = first_group_inliers.size();
-		for ( unsigned int i = 0; i<second_group_inliers.size(); i++)//连接两个数组时一定要注意索引范围
+		for ( unsigned int i = 0; i<second_group_inliers.size(); i++)//连接两个数组时一定要注意索引范围 (Be sure to pay attention to the index range when concatenating two arrays)
 		{
 			dataxy[addr+i].x = second_group_inliers[i].x;
 			dataxy[addr+i].y = second_group_inliers[i].y;
 		}
 //		drawEdge(img,dataxy,(first_group_inliers.size() + second_group_inliers.size()));
 		info = fitEllipse(dataxy,(first_group_inliers.size() + second_group_inliers.size()), param2);
-		free(dataxy); //释放内存
-		//小长短轴的椭圆需要放宽参数
+		free(dataxy); //释放内存 (free memory)
+		//小长短轴的椭圆需要放宽参数 (Ellipses with small major and minor axes need to relax the parameters)
 		if ( param[2] <= 50 )
 			semimajor_errorratio = 0.25;
 		else if (param[2] <= 100 )
@@ -4485,7 +4591,7 @@ bool calcEllipseParametersAndValidate( double * lines, int line_num, vector<vect
 			iscircle_ratio = 0.9;
 		if ( info == 1  && isEllipseEqual(param2,param,3*distance_tolerance,semimajor_errorratio,semiminor_errorratio,0.1, iscircle_ratio) )
 		{
-			ellipara->x = param2[0];//更新椭圆，提高品质
+			ellipara->x = param2[0];//更新椭圆，提高品质 (更新椭圆，提高品质)
 		    ellipara->y = param2[1];
 		    ellipara->a = param2[2];
 		    ellipara->b = param2[3];
@@ -4498,21 +4604,33 @@ bool calcEllipseParametersAndValidate( double * lines, int line_num, vector<vect
 }
 
 
-//输入
+//输入 (enter)
 //lsd算法检测得到的线段集合lines的数量line_num，return的返回值是line_nums条线段，为一维double型数组lines，长度为8*n，每8个为一组
-//存着x1,y1,x2,y2,dx,dy,length,polarity
+// (The number line_num of the line segment set lines detected by the lsd algorithm, the return value of return is line_nums line segments, 
+// which is a one-dimensional double-type array lines, with a length of 8*n, and each 8 is a group)
+//存着x1,y1,x2,y2,dx,dy,length,polarity (Store x1,y1,x2,y2,dx,dy,length,polarity)
 //groups: 线段分组，每个组存按照几何分布顺序顺时针或者逆时针存储着线段索引，线段索引范围是0~line_num-1
+// (groups: line segment grouping, each group stores the line segment index clockwise or counterclockwise according 
+// 			to the geometric distribution order, the line segment index range is 0~line_num-1)
 //coverages: 每个分组的角度覆盖范围0~2pi，如果组里只有1条线段，覆盖角度为0。数组长度等于分组的数量。
+// (coverages: The angle coverage of each group is 0~2pi. If there is only one line segment in the 
+// 			   group, the coverage angle is 0. The array length is equal to the number of groups.)
 //angles 存边缘点的梯度方向gradient direction, 无边缘点位NOTDEF
+// (angles store the gradient direction of the edge point gradient direction, no edge point NOTDEF)
 //返回值 PairedGroupList* list 返回的是初始椭圆集合的数组，长度list->length. 
+// (Return value PairedGroupList* list Returns an array of initial ellipse sets, with length list->length.)
 //切记，该内存在函数内申请，用完该函数记得释放内存，调用函数freePairedSegmentList()进行释放
+// (Remember, the memory is applied in the function, remember to release the memory after using the function, call the function freePairedSegmentList() to release)
 
 PairGroupList * getValidInitialEllipseSet( double * lines, int line_num, vector<vector<int>> * groups, double * coverages, image_double angles, double distance_tolerance, int specified_polarity)
 {
-	//加速计算
+	//加速计算 (Accelerated Computing)
 	//int* lineInliersIndex = (int*)malloc(sizeof(int)*line_num);//如果第i条线段找到了内点，则记录其索引为j = length(supportInliers),即supportInliers.at(j)存着该线段的支持内点,没找到内点的线段对应索引为初始值-1.
-    //vector<vector<point2d>> supportInliers;//保存相应线段的支持内点
+	// (If the i-th line segment finds an interior point, record its index as j = length(supportInliers), that is, supportInliers.at(j) stores the support interior point of the line segment, 
+	// 		and the corresponding index of the line segment where the interior point is not found is the initial value - 1.)
+    //vector<vector<point2d>> supportInliers;//保存相应线段的支持内点 (Save the supported interior points of the corresponding line segment)
 	//memset(lineInliersIndex,-1,sizeof(int)*line_num);//此处要实践确实可行，对于整数可以初始化为0，-1.对于浮点数则只可以为0.
+	// (It is indeed feasible to practice here. For integers, it can be initialized to 0, -1. For floating-point numbers, it can only be 0.)
 
 	PairGroupList * pairGroupList = NULL;
 	PairGroupNode *head, *tail;
@@ -4520,24 +4638,24 @@ PairGroupList * getValidInitialEllipseSet( double * lines, int line_num, vector<
 	point2d pointG1s,pointG1e,pointG2s,pointG2e,g1s_ls_dir,g1e_ls_dir,g2s_ls_dir,g2e_ls_dir;
 	double polarity;
 	point5d ellipara;
-    int groupsNum = (*groups).size();//组的数量
-	double * fitMatrixes = (double*)malloc(sizeof(double)*groupsNum*36);//定义拟合矩阵S_{6 x 6}. 每个组都有一个拟合矩阵
-	unsigned int * supportInliersNum = (unsigned int*)malloc(sizeof(int)*groupsNum);//用于存储每个组曾经最大出现的支持内点数量
+    int groupsNum = (*groups).size();//组的数量 (number of groups)
+	double * fitMatrixes = (double*)malloc(sizeof(double)*groupsNum*36);//定义拟合矩阵S_{6 x 6}. 每个组都有一个拟合矩阵 (Define the fit matrix S_{6 x 6}. Each group has a fit matrix)
+	unsigned int * supportInliersNum = (unsigned int*)malloc(sizeof(int)*groupsNum);//用于存储每个组曾经最大出现的支持内点数量 (Used to store the maximum number of supported inliers that have ever occurred for each group)
 	memset(fitMatrixes,0,sizeof(double)*groupsNum*36);
-	memset(supportInliersNum, 0, sizeof(unsigned int)*groupsNum);//初始化为0.
+	memset(supportInliersNum, 0, sizeof(unsigned int)*groupsNum);//初始化为0. (Initialized to 0.)
 	//double distance_tolerance = max( 2.0, 0.005*min(angles->xsize,angles->ysize) ); // 0.005%*min(xsize,ysize)
     int i,j;
 	int cnt_temp,ind_start,ind_end;
 	bool info;
     
-	//实例化拟合矩阵Si
-	point2d * dataxy = (point2d*)malloc(sizeof(point2d)*line_num*2);//申请足够大内存, line_num条线段，共有2line_num个端点
+	//实例化拟合矩阵Si (Instantiate the fit matrix Si)
+	point2d * dataxy = (point2d*)malloc(sizeof(point2d)*line_num*2);//申请足够大内存, line_num条线段，共有2line_num个端点 (Apply for a large enough memory, line_num line segments, a total of 2line_num endpoints)
 	for ( i = 0; i<groupsNum; i++)
 	{
-		cnt_temp = 0;//千万注意要清0
+		cnt_temp = 0;//千万注意要清0 (Be careful to clear 0)
 		for ( j = 0; j<(*groups)[i].size(); j++)
 		{
-			//每一条线段有2个端点
+			//每一条线段有2个端点 (Each line segment has 2 endpoints)
 			dataxy[cnt_temp].x = lines[(*groups)[i][j]*8];
 			dataxy[cnt_temp++].y = lines[(*groups)[i][j]*8+1];
 			dataxy[cnt_temp].x = lines[(*groups)[i][j]*8+2];
@@ -4545,23 +4663,24 @@ PairGroupList * getValidInitialEllipseSet( double * lines, int line_num, vector<
 		}
 		calcuFitMatrix(dataxy,cnt_temp, fitMatrixes+i*36);
 	}
-	free(dataxy);//释放内存
+	free(dataxy);//释放内存 (free memory)
 
-	head = tail = NULL;//将初始椭圆集合存储到链表中
+	head = tail = NULL;//将初始椭圆集合存储到链表中 (Store the initial set of ellipses into a linked list)
 	//selection of salient elliptic hypothesis
 	for ( i = 0; i<groupsNum; i++)
 	{
 		if(coverages[i] >= M_4_9_PI )//当组的覆盖角度>= 4pi/9 = 80°, 我们认为具有很大的显著性，可直接拟合提取
+		// (When the coverage angle of the group is >= 4pi/9 = 80°, we think it has great significance and can be directly fitted and extracted)
 		{
-			//加入极性判断,只提取指定极性的椭圆
+			//加入极性判断,只提取指定极性的椭圆 (Add polarity judgment, only extract ellipse with specified polarity)
 			if (specified_polarity == 0 || (lines[(*groups)[i][0]*8+7] == specified_polarity))
 			{
-				//显著性大的初始椭圆提取，一定会返回TRUE，因此没必要再判断
+				//显著性大的初始椭圆提取，一定会返回TRUE，因此没必要再判断 (The initial ellipse extraction with large significance will definitely return TRUE, so there is no need to judge again)
 				info = calcEllipseParametersAndValidate(lines,line_num,groups,i,-1,(fitMatrixes+i*36),NULL,angles,distance_tolerance,supportInliersNum,&ellipara);
 				if (info == FALSE) 
 				{
 					continue;
-					error("getValidInitialEllipseSet, selection of salient ellipses failed!");//这种情况会出现？？,跑54.jpg出现该问题
+					error("getValidInitialEllipseSet, selection of salient ellipses failed!");//这种情况会出现？？,跑54.jpg出现该问题 (Will this happen? ? , the problem occurs when running 54.jpg)
 				}
 				PairGroupNode * node = (PairGroupNode*)malloc(sizeof(PairGroupNode));
 				node->center.x = ellipara.x;
@@ -4570,7 +4689,7 @@ PairGroupList * getValidInitialEllipseSet( double * lines, int line_num, vector<
 				node->axis.y   = ellipara.b;
 				node->phi      = ellipara.phi;
 				node->pairGroupInd.x = i;
-				node->pairGroupInd.y = -1;//无
+				node->pairGroupInd.y = -1;//无 (without)
 				if(head != NULL)
 				{
 					tail->next = node;
@@ -4588,14 +4707,14 @@ PairGroupList * getValidInitialEllipseSet( double * lines, int line_num, vector<
 	for ( i = 0; i<groupsNum-1; i++)
 		for ( j = i+1; j<groupsNum; j++)
 			{
-				//加入极性判断,只提取指定极性的椭圆
+				//加入极性判断,只提取指定极性的椭圆 (Add polarity judgment, only extract ellipse with specified polarity)
 			   if (specified_polarity == 0 || (lines[(*groups)[i][0]*8+7] == specified_polarity))
 			    {
 					//group i 's polarity is the same as group j; and the number of two paired groups should be >= 3.
 					if( lines[(*groups)[i][0]*8+7] == lines[(*groups)[j][0]*8+7] && ((*groups)[i].size() + (*groups)[j].size()) >= 3)
 					{
-						ind_start = (*groups)[i][0];//第i组的最开始一条线段索引
-						ind_end   = (*groups)[i][(*groups)[i].size()-1];//第i组的最后一条线段索引
+						ind_start = (*groups)[i][0];//第i组的最开始一条线段索引 (The first line segment index of the i-th group)
+						ind_end   = (*groups)[i][(*groups)[i].size()-1];//第i组的最后一条线段索引 (last line segment index of group i)
 						pointG1s.x = lines[ind_start*8];
 						pointG1s.y = lines[ind_start*8+1];
 						g1s_ls_dir.x = lines[ind_start*8+4];
@@ -4604,8 +4723,8 @@ PairGroupList * getValidInitialEllipseSet( double * lines, int line_num, vector<
 						pointG1e.y = lines[ind_end*8+3];
 						g1e_ls_dir.x = lines[ind_end*8+4];
 						g1e_ls_dir.y = lines[ind_end*8+5];
-						ind_start = (*groups)[j][0];//第j组的最开始一条线段索引
-						ind_end   = (*groups)[j][(*groups)[j].size()-1];//第j组的最后一条线段索引
+						ind_start = (*groups)[j][0];//第j组的最开始一条线段索引 (The first line segment index of the jth group)
+						ind_end   = (*groups)[j][(*groups)[j].size()-1];//第j组的最后一条线段索引 (last line segment index of the jth group)
 						pointG2s.x = lines[ind_start*8];
 						pointG2s.y = lines[ind_start*8+1];
 						g2s_ls_dir.x = lines[ind_start*8+4];
@@ -4614,7 +4733,7 @@ PairGroupList * getValidInitialEllipseSet( double * lines, int line_num, vector<
 						pointG2e.y = lines[ind_end*8+3];
 						g2e_ls_dir.x = lines[ind_end*8+4];
 						g2e_ls_dir.y = lines[ind_end*8+5];
-						polarity = lines[ind_start*8+7]; //i,j两组的极性
+						polarity = lines[ind_start*8+7]; //i,j两组的极性 (The polarities of the two groups i, j)
 						if(regionLimitation(pointG1s,g1s_ls_dir,pointG1e,g1e_ls_dir,pointG2s,g2s_ls_dir,pointG2e,g2e_ls_dir,polarity,-3*distance_tolerance))//都在彼此的线性区域内
 						{
 							//if ( i == 2)
@@ -4629,7 +4748,7 @@ PairGroupList * getValidInitialEllipseSet( double * lines, int line_num, vector<
 								node->axis.y   = ellipara.b;
 								node->phi      = ellipara.phi;
 								node->pairGroupInd.x = i;
-								node->pairGroupInd.y = -1;//无
+								node->pairGroupInd.y = -1;//无 (without)
 								if(head != NULL)
 								{
 									tail->next = node;
@@ -4658,7 +4777,7 @@ PairGroupList * getValidInitialEllipseSet( double * lines, int line_num, vector<
 			pairGroupList->pairGroup[i].axis.x = p->axis.x;
 			pairGroupList->pairGroup[i].axis.y = p->axis.y;
 			pairGroupList->pairGroup[i].phi = p->phi;
-			pairGroupList->pairGroup[i].pairGroupInd.x = p->pairGroupInd.x;//记录组对(i,j),由groups中的第i个组和第j个组构成的匹配组产生该有效椭圆参数
+			pairGroupList->pairGroup[i].pairGroupInd.x = p->pairGroupInd.x;//记录组对(i,j),由groups中的第i个组和第j个组构成的匹配组产生该有效椭圆参数 (Record the group pair (i, j), the matching group consisting of the i-th group and the j-th group in groups produces the valid ellipse parameter)
 			pairGroupList->pairGroup[i].pairGroupInd.y = p->pairGroupInd.y;
 			p = p->next;
 		}
@@ -4671,33 +4790,35 @@ PairGroupList * getValidInitialEllipseSet( double * lines, int line_num, vector<
 		}
 	}
 	//supportInliers.resize(0);
-	//free(lineInliersIndex);//释放线段内点的索引
-	free(supportInliersNum);//释放存储各个组的支持内点数量的数组
-	free(fitMatrixes);//释放存储各个组的拟合矩阵
+	//free(lineInliersIndex);//释放线段内点的索引 (release the index of the point within the segment)
+	free(supportInliersNum);//释放存储各个组的支持内点数量的数组 (Free the array that stores the number of supported interior points for each group)
+	free(fitMatrixes);//释放存储各个组的拟合矩阵 (release the fit matrix that stores the individual groups)
 	return pairGroupList;
 }
 
 
 void generateEllipseCandidates( PairGroupList * pairGroupList, double distance_tolerance, double * & ellipse_candidates, int * candidates_num)
 {
-	if( pairGroupList->length <= 0 )//检测，至少要有1个样本用来产生候选
+	if( pairGroupList->length <= 0 )//检测，至少要有1个样本用来产生候选 (detection, at least 1 sample must be used to generate candidates)
 	{
 		ellipse_candidates = NULL;
 		(*candidates_num) = 0;
 		return;
 	}
 	double * centers;
-	int center_num; //椭圆中心(xi,yi)的聚类数量
+	int center_num; //椭圆中心(xi,yi)的聚类数量 (Number of clusters at the center of the ellipse (xi,yi))
 	double * phis;
-	int phi_num;    //针对每一个椭圆中心(xi,yi)，倾斜角度phi的聚类数量
+	int phi_num;    //针对每一个椭圆中心(xi,yi)，倾斜角度phi的聚类数量 (For each ellipse center (xi,yi), the number of clusters at the tilt angle phi)
 	double * axises;
-	int axis_num;   //针对每一个椭圆中心和倾角(xi,yi,phi),长短半轴(a,b)的聚类数量
+	int axis_num;   //针对每一个椭圆中心和倾角(xi,yi,phi),长短半轴(a,b)的聚类数量 (For each ellipse center and inclination (xi, yi, phi), the number of clusters of the major and minor semi-axes (a, b))
 	double * bufferXY = (double*)calloc(pairGroupList->length*2,sizeof(double));
 	double * bufferPhi = (double*)calloc(pairGroupList->length,sizeof(double));
 	double * bufferAB = (double*)calloc(pairGroupList->length*2,sizeof(double));
 	point2i * bufferIndexes = (point2i *)calloc(pairGroupList->length,sizeof(point2i));//point[i].x记录第i个分类在bufferXX中的起始索引位置，point[i].y记录第i个分类在bufferXX中的长度
+																					   // (point[i].x records the starting index position of the i-th category in bufferXX, point[i].y records the length of the i-th category in bufferXX)
 	double  * buffer2AB = (double*)calloc(pairGroupList->length*2,sizeof(double));
 	point2i * buffer2Indexes = (point2i *)calloc(pairGroupList->length,sizeof(point2i));//point[i].x记录第i个分类在bufferXX中的起始索引位置，point[i].y记录第i个分类在bufferXX中的长度
+																						// (point[i].x records the starting index position of the i-th category in bufferXX, point[i].y records the length of the i-th category in bufferXX)
 	int     * buffer_temp = (int*)calloc(pairGroupList->length,sizeof(int));
 	int addr,addr2,info,ind;
 	double dis_min,dis_temp;
@@ -4709,7 +4830,7 @@ void generateEllipseCandidates( PairGroupList * pairGroupList, double distance_t
 		(*candidates_num) = 0;
 		error("generateEllipseCandidates, not enough memory");
 	}
-	(*candidates_num) = 0; //候选椭圆数量，初始化为0,非常重要
+	(*candidates_num) = 0; //候选椭圆数量，初始化为0,非常重要 (The number of candidate ellipses, initialized to 0, very important)
 	//copy
 	for ( int i = 0; i<pairGroupList->length; i++)
 	{
@@ -4725,7 +4846,7 @@ void generateEllipseCandidates( PairGroupList * pairGroupList, double distance_t
 		(*candidates_num) = 0;
 		error("generateEllipseCandidates, cluster2DPoints, error in clustering elliptic centers");
 	}
-	//classification,寻找每个点归属的聚类中心
+	//classification,寻找每个点归属的聚类中心 (classification, find the cluster center to which each point belongs)
 	for ( int i = 0; i<pairGroupList->length; i++)
 	{
 		dis_min = DBL_MAX;
@@ -4740,11 +4861,13 @@ void generateEllipseCandidates( PairGroupList * pairGroupList, double distance_t
 				ind = j; //record the nearest center's index
 			}
 		}
-		buffer_temp[i] = ind; //此处借用buffer2来记下第i个初始椭圆对应第ind个椭圆聚类中心
+		buffer_temp[i] = ind; //此处借用buffer2来记下第i个初始椭圆对应第ind个椭圆聚类中心 (Here, buffer2 is used to record the i-th initial ellipse corresponding to the ind-th ellipse cluster center)
 	}
 	//将分类结果按顺序存到bufferXY,bufferPhi,bufferAB中，且bufferIndexes[i]存着第i个聚类中心的起始索引位置和长度
+	// (Store the classification results in bufferXY, bufferPhi, bufferAB in order, and bufferIndexes[i] 
+	//  stores the starting index position and length of the i-th cluster center)
 	memset(bufferIndexes,0,sizeof(point2i)*pairGroupList->length);
-	ind = 0;//清零，样本点起始位置，索引位置是ind*2,分区的基址
+	ind = 0;//清零，样本点起始位置，索引位置是ind*2,分区的基址 (Cleared, the starting position of the sample point, the index position is ind*2, the base address of the partition)
 	for ( int i = 0; i<center_num; i++)
 	{
 		bufferIndexes[i].x = ind; 
@@ -4752,37 +4875,38 @@ void generateEllipseCandidates( PairGroupList * pairGroupList, double distance_t
 		{
 			if ( buffer_temp[j] == i)
 			{
-				addr = ind*2;//切记长短半轴是一组一组寸储的，需要 x 2
+				addr = ind*2;//切记长短半轴是一组一组寸储的，需要 x 2 (Remember that the long and short semi-axes are stored in groups of inches, and you need x 2)
 				addr2 = bufferIndexes[i].y*2;
 				bufferPhi[ind+bufferIndexes[i].y] = pairGroupList->pairGroup[j].phi;
 				bufferAB[addr+addr2] = pairGroupList->pairGroup[j].axis.x;
 				bufferAB[addr+addr2+1] = pairGroupList->pairGroup[j].axis.y;
-				bufferIndexes[i].y++;//第i个聚类中心周围的点数量加1
+				bufferIndexes[i].y++;//第i个聚类中心周围的点数量加1 (Add 1 to the number of points around the i-th cluster center)
 			}
 		}
-		if(bufferIndexes[i].y == 0)//聚类中心周围没有靠近的点
+		if(bufferIndexes[i].y == 0)//聚类中心周围没有靠近的点 (There are no close points around the cluster center)
 		{
 			error("generateEllipseCandidates, no XY points near to the clustering center");
 		}
 		ind += bufferIndexes[i].y;
 	}
 	//cout<<"2D cluster centers over"<<endl;
-	//对每一个椭圆中心的周围的点进行倾角聚类
+	//对每一个椭圆中心的周围的点进行倾角聚类 (Dip clustering of points around the center of each ellipse)
 	//第i个椭圆聚类中心，其邻近点的索引范围是：bufferIndexs[i].x ~ (bufferIndex[i].x + bufferIndex[i].y-1)
+	// (The i-th ellipse cluster center, the index range of its neighboring points is: bufferIndexs[i].x ~ (bufferIndex[i].x + bufferIndex[i].y-1))
 	for ( int i = 0; i<center_num; i++)
 	{
 		
 
-		double * phi_pointer_temp = bufferPhi+bufferIndexes[i].x;//倾角指针
-		double * ab_pointer_temp = bufferAB+bufferIndexes[i].x*2;//长短半轴的指针,记住 x 2
-		info = cluster1DDatas(phi_pointer_temp, bufferIndexes[i].y, 0.0873, phis, &phi_num);//对phi聚类, pi/180*5 = 0.0873, 5°误差
-		if (info == 0) //不懂为什么，聚类中心centers[i]的周围可能没有最靠近它的点,数量bufferIndexes[i].y = 0
+		double * phi_pointer_temp = bufferPhi+bufferIndexes[i].x;//倾角指针 (Tilt pointer)
+		double * ab_pointer_temp = bufferAB+bufferIndexes[i].x*2;//长短半轴的指针,记住 x 2 (The pointer of the long and short semi-axis, remember x 2)
+		info = cluster1DDatas(phi_pointer_temp, bufferIndexes[i].y, 0.0873, phis, &phi_num);//对phi聚类, pi/180*5 = 0.0873, 5°误差 (For phi clustering, pi/180*5 = 0.0873, 5° error)
+		if (info == 0) //不懂为什么，聚类中心centers[i]的周围可能没有最靠近它的点,数量bufferIndexes[i].y = 0 (I don't know why, the cluster center centers[i] may not have the closest point around it, the number bufferIndexes[i].y = 0)
 		{ 
 			//cout<<"generateEllipseCandidates, cluster2DPoints, error in clustering elliptic phis"<<endl;
 			continue;
 			//error("generateEllipseCandidates, cluster2DPoints, error in clustering elliptic phis");
 		}
-		//classification,寻找每个点归属的聚类中心
+		//classification,寻找每个点归属的聚类中心 (classification, find the cluster center to which each point belongs)
 		for ( int j = 0; j<bufferIndexes[i].y; j++ )
 		{
 			dis_min = DBL_MAX;
@@ -4799,11 +4923,13 @@ void generateEllipseCandidates( PairGroupList * pairGroupList, double distance_t
 			buffer_temp[j] = ind;
 		}
 		//将分类结果按顺序存储到buffer2AB中，且buffer2Indexes[j].x对应第i个phi的聚类中心起始点，buffer2Indexes[j].y对应数量(长度)
+		// (Store the classification results in buffer2AB in order, and buffer2Indexes[j].x corresponds to the starting 
+		//  point of the cluster center of the i-th phi, and buffer2Indexes[j].y corresponds to the number (length))
 		memset(buffer2Indexes,0,sizeof(point2i)*bufferIndexes[i].y);
 		ind = 0;
 		for ( int j = 0; j<phi_num; j++)
 		{
-			buffer2Indexes[j].x = ind;//起始点
+			buffer2Indexes[j].x = ind;//起始点 (starting point)
 			for ( int k = 0; k<bufferIndexes[i].y; k++)
 			{
 				if ( buffer_temp[k] == j)
@@ -4812,22 +4938,23 @@ void generateEllipseCandidates( PairGroupList * pairGroupList, double distance_t
 					addr2 = buffer2Indexes[j].y*2;
 					buffer2AB[addr+addr2] = *(ab_pointer_temp+k*2);
 					buffer2AB[addr+addr2+1] = *(ab_pointer_temp+k*2+1);
-					buffer2Indexes[j].y++;//长度加1
+					buffer2Indexes[j].y++;//长度加1 (length plus 1)
 				}
 			}
 			ind += buffer2Indexes[j].y;
 		}
 		for ( int j = 0; j<phi_num; j++ )
 		{
-			double * ab_pointer_temp2 = buffer2AB+buffer2Indexes[j].x*2; //长短半轴的指针,记住 x 2
+			double * ab_pointer_temp2 = buffer2AB+buffer2Indexes[j].x*2; //长短半轴的指针,记住 x 2 (The pointer of the long and short semi-axis, remember x 2)
 			info = cluster2DPoints(ab_pointer_temp2, buffer2Indexes[j].y, distance_tolerance, axises, &axis_num);
-			if (info == 0) //不懂为什么，聚类中心phi_j的周围可能没有最靠近它的点,数量buffer2Indexes[j].y = 0
+			if (info == 0) //不懂为什么，聚类中心phi_j的周围可能没有最靠近它的点,数量buffer2Indexes[j].y = 0 (I don't know why, the cluster center phi_j may not have the closest point around it, the number buffer2Indexes[j].y = 0)
 			{   
 				//cout<<"generateEllipseCandidates, cluster2DPoints, error in clustering elliptic axises"<<endl;
 				continue;
 				//error("generateEllipseCandidates, cluster2DPoints, error in clustering elliptic axises");
 			}
 			//将候选椭圆重写到bufferXY,bufferPhi,bufferAB里面, 候选椭圆数量(*candidates_num)++
+			// (Rewrite the candidate ellipse into bufferXY, bufferPhi, bufferAB, the number of candidate ellipses (*candidates_num)++)
 			for ( int k = 0; k<axis_num; k++)
 			{
 				addr = (*candidates_num)*2;
@@ -4839,12 +4966,15 @@ void generateEllipseCandidates( PairGroupList * pairGroupList, double distance_t
 				(*candidates_num)++;
 			}
 			free(axises);//cluster2DPoints严格要求，用完axises后，需要释放函数内部申请的内存
+						 // (Cluster2DPoints is strictly required. After axises are used up, the memory allocated inside the function needs to be released)
 		}
 		free(phis);//cluster1DDatas严格要求，用完phis后，需要释放函数内部申请的内存
+				   // (Cluster1DDatas is strictly required. After using phis, you need to release the memory requested by the function.)
 	}
 	free(centers);//cluster2DPoints严格要求，用完centers后，需要释放函数内部申请的内存
-	//释放在函数开头申请的部分内存
-	free(buffer_temp); //此处释放出问题
+				  // (Cluster2DPoints is strictly required. After running out of centers, you need to release the memory requested by the function.)
+	//释放在函数开头申请的部分内存 (Free part of the memory allocated at the beginning of the function)
+	free(buffer_temp); //此处释放出问题 (issue here)
 	free(buffer2Indexes);
 	free(buffer2AB);
 	free(bufferIndexes);
@@ -4858,7 +4988,7 @@ void generateEllipseCandidates( PairGroupList * pairGroupList, double distance_t
 		ellipse_candidates[i*5+3]= bufferAB[addr+1];
 		ellipse_candidates[i*5+4]= bufferPhi[i];
 	}
-	//释放在函数开头申请的内存
+	//释放在函数开头申请的内存 (Free the memory allocated at the beginning of the function)
 	free(bufferAB);
 	free(bufferPhi);
 	free(bufferXY);
@@ -4878,15 +5008,17 @@ void generateEllipseCandidates( PairGroupList * pairGroupList, double distance_t
 
 //==========================================END=======================================================================
 /**
-输入：
-prhs[0]: 输入的灰度图像，单通道，大小是imgy x imgx
-prhs[1]: 边缘提取选择，1 canny; 2 sobel
-prhs[2]: 检测指定的椭圆极性
-输出：
-plhs[0]: 候选椭圆组合(xi,yi,ai,bi,phi_i)', 5 x m
+输入：(enter)
+prhs[0]: 输入的灰度图像，单通道，大小是imgy x imgx (input grayscale image, single channel, size imgy x imgx)
+prhs[1]: 边缘提取选择，1 canny; 2 sobel (edge extraction selection, 1 canny; 2 sobel)
+prhs[2]: 检测指定的椭圆极性 (Detects the specified ellipse polarity)
+输出：(output)
+plhs[0]: 候选椭圆组合(xi,yi,ai,bi,phi_i)', 5 x m (Candidate ellipse combination (xi,yi,ai,bi,phi_i)', 5 x m)
 plhs[1]: 边缘图，大小是imgy x imgx，设边缘点总数为 edgepix_n. 二值化，0 或者 255
+		 (Edge map, the size is imgy x imgx, let the total number of edge points be edgepix_n. Binarization, 0 or 255)
 plhs[2]: 边缘点的梯度向量矩阵，大小是 2 x edgepix_n, (cos(theta_rad),sin(theta_rad))'...
-plhs[3]: 线段图，大小是imgy x imgx 
+		 (Matrix of gradient vectors of edge points of size 2 x edgepix_n, (cos(theta_rad),sin(theta_rad))'...)
+plhs[3]: 线段图，大小是imgy x imgx (Line segment plot, size is imgy x imgx)
 */
 /*
 compile：
@@ -4902,11 +5034,12 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       mexErrMsgIdAndTxt( "MATLAB:revord:maxlhs","Too many output arguments.");
 	uchar * inputimg = (uchar*)mxGetData(prhs[0]);
 	int imgy,imgx;
-	int edge_process_select = (int)mxGetScalar(prhs[1]);//边缘提取选择，1 canny; 2 sobel
+	int edge_process_select = (int)mxGetScalar(prhs[1]);//边缘提取选择，1 canny; 2 sobel (edge extraction selection, 1 canny; 2 sobel)
 	int specified_polarity  = (int)mxGetScalar(prhs[2]);//1,指定检测的椭圆极性要为正; -1指定极性为负; 0表示两种极性椭圆都检测
+														// (1, the polarity of the specified ellipse to be detected must be positive; -1 specifies that the polarity is negative; 0 means that both polar ellipses are detected)
 	imgy = (int)mxGetM(prhs[0]);
 	imgx = (int)mxGetN(prhs[0]);
-	double *data=(double*)malloc(imgy*imgx*sizeof(double));//将输入矩阵中的图像数据转存到一维数组中
+	double *data=(double*)malloc(imgy*imgx*sizeof(double));//将输入矩阵中的图像数据转存到一维数组中 (Dump the image data in the input matrix into a 1D array)
     for(int c=0;c<imgx;c++)
     {
         for(int r=0;r<imgy;r++)
@@ -4914,7 +5047,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
            data[c+r*imgx]=inputimg[r+c*imgy];              
         }    
     }
-	int n;//线段数量
+	int n;//线段数量 (Number of line segments)
 	//int new_n;
 	vector<vector<int>> groups;
 	double * coverages;
@@ -4922,9 +5055,9 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	int reg_x;
 	int reg_y;
     double* out=mylsd(&n, data,imgx,imgy,&reg,&reg_x,&reg_y);
-	groupLSs(out,n,reg,reg_x,reg_y,&groups);//分组
-	free(reg); //释放内存
-	calcuGroupCoverage(out,n,groups,coverages);//计算每个组的覆盖角度
+	groupLSs(out,n,reg,reg_x,reg_y,&groups);//分组 (grouping)
+	free(reg); //释放内存 (free memory)
+	calcuGroupCoverage(out,n,groups,coverages);//计算每个组的覆盖角度 (Calculate the coverage angle for each group)
 
     printf("The number of output arc-support line segments: %i\n",n);
 	printf("The number of arc-support groups:%i\n",groups.size());
@@ -4942,9 +5075,9 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		 calculateGradient3(data,imgx,imgy,&angles); //version2, sobel; version 3 canny
 	 PairGroupList * pairGroupList;
 	 double distance_tolerance = 2;//max( 2.0, 0.005*min(angles->xsize,angles->ysize) ); // 0.005%*min(xsize,ysize)
-	 double * candidates; //候选椭圆
-	 double * candidates_out;//输出候选椭圆指针
-	 int  candidates_num = 0;//候选椭圆数量
+	 double * candidates; //候选椭圆 (candidate ellipse)
+	 double * candidates_out;//输出候选椭圆指针 (output candidate ellipse pointer)
+	 int  candidates_num = 0;//候选椭圆数量 (Number of candidate ellipses)
 	 //rejectShortLines(out,n,&new_n);
 	 pairGroupList = getValidInitialEllipseSet(out,n,&groups,coverages,angles,distance_tolerance,specified_polarity);
 	 if(pairGroupList != NULL)
@@ -4956,6 +5089,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		plhs[0] = mxCreateDoubleMatrix(5,candidates_num,mxREAL);
 		candidates_out = (double*)mxGetPr(plhs[0]);
 		//候选圆组合(xi,yi,ai,bi,phi_i)', 5 x candidates_num, 复制到矩阵candidates_out中
+		// (Candidate circle combination (xi,yi,ai,bi,phi_i)', 5 x candidates_num, copied to matrix candidates_out)
 		memcpy(candidates_out,candidates,sizeof(double)*5*candidates_num);
 
 		freePairGroupList(pairGroupList);
@@ -4970,12 +5104,12 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		 candidates_out[0] = candidates_out[1] = candidates_out[2] = candidates_out[3] = candidates_out[4] = 0;
 	 }
 	 uchar *edgeimg_out;
-	 unsigned long edge_pixels_total_num = 0;//边缘总像素
+	 unsigned long edge_pixels_total_num = 0;//边缘总像素 (total edge pixels)
 	 double *gradient_vec_out;
 	 plhs[1] = mxCreateNumericMatrix(imgy,imgx,mxUINT8_CLASS,mxREAL);
 	 edgeimg_out = (uchar*)mxGetData(plhs[1]);
-	 //将边缘图复制到矩阵edgeimg_out中
-	 //将梯度向量存到矩阵gradient_vec_out中
+	 //将边缘图复制到矩阵edgeimg_out中 (Copy the edge map into the matrix edgeimg_out)
+	 //将梯度向量存到矩阵gradient_vec_out中 (Store the gradient vector in the matrix gradient_vec_out)
 	 unsigned long addr,g_cnt = 0;
 	 for ( int c = 0; c < imgx; c++ )
 		 for ( int r = 0; r < imgy; r++)
@@ -4985,13 +5119,14 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 				 edgeimg_out[c*imgy+r] = 0;
 			 else
 			 {
-				 edgeimg_out[c*imgy+r] = 255;//为边缘点，赋值为白色
+				 edgeimg_out[c*imgy+r] = 255;//为边缘点，赋值为白色 (is the edge point, assigned as white)
 				 //------------------------------------------------
 				 edge_pixels_total_num++;
 			 }
 		 }
 	 printf("edge pixel number: %i\n",edge_pixels_total_num);
 	//申请edge_pixels_total_num x 2 来保存每一个边缘点的梯度向量，以列为优先，符合matlab的习惯
+	// (Apply edge_pixels_total_num x 2 to save the gradient vector of each edge point, listed first, in line with the habit of matlab)
 	 plhs[2] = mxCreateDoubleMatrix(2,edge_pixels_total_num,mxREAL);
 	 gradient_vec_out = (double*)mxGetPr(plhs[2]);
 	  for ( int c = 0; c < imgx; c++ )
@@ -5005,7 +5140,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 			 }
 		 }
 	 //---------------------------------------------------------------------
-	//输出线段检测的图像
+	//输出线段检测的图像 (Output image for line segment detection)
 	if(nlhs == 4)
 	{
 		Mat ls_mat = Mat::zeros(imgy,imgx,CV_8UC1);
@@ -5028,6 +5163,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	}
 	//---------------------------------------------------------------------
 	//这里的free是释放程序中用于产生候选圆所用到的一系列内存
+	// (The free here is to release a series of memory used in the program to generate candidate circles)
 	free(data);
 	free(coverages);
 	free(out);

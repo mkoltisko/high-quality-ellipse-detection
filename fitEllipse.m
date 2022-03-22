@@ -91,7 +91,7 @@ Rv = sqrt(abs(Rv));
 
 info = 1;%return successfully
 ellipse = [uCentre, vCentre, Ru, Rv, thetarad];%x0(col) y0(row) semimajor semiminor thera_rad
- %会出现Ru < Rv情况，对调一下
+ %会出现Ru < Rv情况，对调一下 (There will be Ru < Rv situation, swap it)
 if(Ru < Rv )
    ellipse(3) = Rv;
    ellipse(4) = Ru;
