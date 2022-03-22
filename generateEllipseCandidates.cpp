@@ -175,8 +175,7 @@ int double_equal(double a, double b)
 /*----------------------------------------------------------------------------*/
 /** Absolute value angle difference.
  */
-//得到2个弧度制角度的夹角的绝对值
-//Get the absolute value of the angle between 2 radians
+//得到2个弧度制角度的夹角的绝对值 (Get the absolute value of the angle between 2 radians)
 double angle_diff(double a, double b)
 {
   a -= b;
@@ -213,8 +212,7 @@ double dist(double x1, double y1, double x2, double y2)
   return sqrt( (x2-x1)*(x2-x1) + (y2-y1)*(y2-y1) );
 }
 
-//向量内积
-//vector inner product
+//向量内积 (vector inner product)
 double dotProduct(point2d vec1, point2d vec2)
 {
 	return (vec1.x*vec2.x+vec1.y*vec2.y);
@@ -404,6 +402,7 @@ rect_iter * ri_ini(struct rect * r)
   /* build list of rectangle corners ordered
      in a circular way around the rectangle */
   //从线段的起点(x1,y1)处的一端开始按照逆时针重构出矩形的四个定点
+  // (The four fixed points of the rectangle are reconstructed counterclockwise from one end at the starting point (x1, y1) of the line segment)
   vx[0] = r->x1 - r->dy * r->width / 2.0;
   vy[0] = r->y1 + r->dx * r->width / 2.0;
   vx[1] = r->x2 - r->dy * r->width / 2.0;
@@ -532,7 +531,8 @@ image_double new_image_double_ptr( int xsize,
 #define USED    1
 
 //对于构成圆弧的像素标记极性，如果梯度的方向和弧的方向指向一致，则为SAME_POLE,否则为OPP_POLE,该标记初始是为0
-//For the polarity of the pixel marker that forms the arc, if the direction of the gradient is the same as the direction of the arc, it is SAME_POLE, otherwise it is OPP_POLE, and the marker is initially 0
+// (For the polarity of the pixel marker that forms the arc, if the direction of the gradient is the same as
+//  the direction of the arc, it is SAME_POLE, otherwise it is OPP_POLE, and the marker is initially 0)
 #define NOTDEF_POL 0
 #define SAME_POL 1
 #define OPP_POL  -1
@@ -998,10 +998,10 @@ static image_double gaussian_sampler( image_double in, double scale,
  */
 //返回一张梯度角度顺时针旋转90°后的align角度图angles，如果梯度角度是(gx,gy)->(-gy,gx)，
 //和梯度的模的图modgrad,然后按照n_bins进行伪排序返回链表的头指针list_p,里面存的是坐标
-//Returns an align angle map angles after the gradient angle is rotated 90° clockwise, 
+//(Returns an align angle map angles after the gradient angle is rotated 90° clockwise, 
 //if the gradient angle is (gx,gy)->(-gy,gx), and the map modgrad of the gradient's modulus, 
 //and then returns according to the pseudo-sort of n_bins The head pointer list_p of the linked list, 
-//which stores the coordinates
+//which stores the coordinates)
 static image_double ll_angle( image_double in, double threshold,
                               struct coorlist ** list_p,
                               image_double * modgrad, unsigned int n_bins )
